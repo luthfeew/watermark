@@ -22,6 +22,9 @@ MODE OPERASI
             timestamp baru tanpa logo (logo di foto asli tetap terlihat)
 
 CARA PAKAI
+  # Watermark seluruh folder tempat script berada (tanpa argumen)
+  python watermark_kso.py
+
   # Watermark normal — satu atau beberapa file
   python watermark_kso.py foto.jpg
   python watermark_kso.py *.jpg --output-dir ./hasil/
@@ -381,7 +384,7 @@ def add_watermark(
 # ──────────────────────────────────────────────
 _IMG_EXTS = {".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"}
 
-def collect_images(inputs: list[str], recursive: bool = False) -> list[str]:
+def collect_images(inputs: list[str], recursive: bool = False, exclude: set = None) -> list[str]:
     """
     Expand argumen input menjadi daftar path file gambar.
 
@@ -392,15 +395,19 @@ def collect_images(inputs: list[str], recursive: bool = False) -> list[str]:
     Args:
         inputs    : list path dari argumen CLI (file dan/atau folder)
         recursive : True = scan subfolder secara rekursif (--recursive)
+        exclude   : set path (resolved) yang dilewati, misal file logo
 
     Returns:
         List path file gambar yang sudah di-deduplikasi, urut alfabet.
     """
+    excluded = {Path(p).resolve() for p in (exclude or [])}
     collected = []
     for inp in inputs:
         p = Path(inp)
         if p.is_file():
-            if p.suffix in _IMG_EXTS:
+            if p.resolve() in excluded:
+                print(f"   ⏭️  Dilewati (logo): {p.name}")
+            elif p.suffix in _IMG_EXTS:
                 collected.append(str(p))
             else:
                 print(f"⚠️  Dilewati (bukan gambar): {inp}")
@@ -408,7 +415,7 @@ def collect_images(inputs: list[str], recursive: bool = False) -> list[str]:
             pattern = "**/*" if recursive else "*"
             found = sorted(
                 f for f in p.glob(pattern)
-                if f.is_file() and f.suffix in _IMG_EXTS
+                if f.is_file() and f.suffix in _IMG_EXTS and f.resolve() not in excluded
             )
             if not found:
                 print(f"⚠️  Tidak ada gambar di folder: {inp}")
@@ -440,7 +447,10 @@ def parse_args():
     )
     p.add_argument(
         "images", nargs="*",
-        help="File/folder gambar. Kosongkan untuk pakai folder script."
+        help=(
+            "File gambar (jpg/png) dan/atau folder. Bisa mix keduanya. "
+            "Kosongkan untuk memproses semua gambar di folder yang sama dengan script."
+        )
     )
     p.add_argument(
         "--recursive", "-r", action="store_true",
@@ -497,16 +507,10 @@ def main():
             print_exif_info(img_path)
         return
 
-    # Expand file & folder → flat list gambar
+    # Kalau tidak ada argumen → pakai folder tempat script berada
     inputs = args.images if args.images else [str(Path(__file__).parent)]
-    all_images = collect_images(inputs, recursive=args.recursive)
-    logo_path = resolve_logo(args.logo)
-    if logo_path:
-        all_images = [f for f in all_images if os.path.abspath(f) != os.path.abspath(logo_path)]
-    if not all_images:
-        print("❌ Tidak ada file gambar yang bisa diproses.")
-        sys.exit(1)
-    print(f"Total      : {len(all_images)} file akan diproses\n")
+    if not args.images:
+        print(f"📂 Tidak ada argumen, memproses folder script: {Path(__file__).parent}")
 
     # Timestamp manual
     manual_dt = None
@@ -519,8 +523,14 @@ def main():
 
     logo_path = resolve_logo(args.logo)
 
+    # File logo diexclude supaya tidak ikut diproses saat scan folder
+    logo_exclude = {logo_path} if logo_path else set()
+
     if args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
+
+    # Expand file & folder → flat list gambar (logo otomatis diexclude)
+    all_images = collect_images(inputs, recursive=args.recursive, exclude=logo_exclude)
 
     success = 0
     for img_path in all_images:
