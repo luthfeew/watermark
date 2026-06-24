@@ -317,10 +317,6 @@ def add_watermark(
     font_ts  = load_font(fs_ts,  bold=True)
     font_tag = load_font(fs_tag, bold=True)
 
-    # Tampilkan font yang dipakai (ambil path dari font object)
-    font_name = getattr(font_ts, "path", "PIL default bitmap")
-    print(f"   🔤 Font: {font_name} (size={fs_ts}px)")
-
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw    = ImageDraw.Draw(overlay)
 
@@ -531,6 +527,15 @@ def main():
 
     # Expand file & folder → flat list gambar (logo otomatis diexclude)
     all_images = collect_images(inputs, recursive=args.recursive, exclude=logo_exclude)
+    if not all_images:
+        print("❌ Tidak ada file gambar yang bisa diproses.")
+        sys.exit(1)
+
+    # Tampilkan font yang dipakai — cukup sekali sebelum loop
+    _sample_font = load_font(100, bold=True)
+    _font_name   = getattr(_sample_font, "path", "PIL default bitmap")
+    print(f"🔤 Font    : {_font_name}")
+    print(f"Total      : {len(all_images)} file akan diproses\n")
 
     success = 0
     for img_path in all_images:
