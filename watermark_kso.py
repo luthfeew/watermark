@@ -82,12 +82,12 @@ except ImportError:
 # Ketebalan teks dikontrol dari pemilihan file .ttf-nya.
 # Ganti daftar di bawah jika ingin font lain; urutan = prioritas.
 
-# Font Bold — dipakai untuk timestamp & tag (lebih terbaca di foto)
-_FONT_BOLD = [
+# Font Custom — dipakai untuk timestamp & tag (lebih terbaca di foto)
+_FONT_CUSTOM = [
     "C:\\Users\\luthf\\AppData\\Local\\Microsoft\\Windows\\Fonts\\Roboto-Regular.ttf",
 ]
 
-# Font Regular — dipakai jika bold tidak tersedia
+# Font Regular — dipakai jika custom tidak tersedia
 _FONT_REGULAR = [
     "/usr/share/fonts/truetype/liberation/LiberationSans.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -115,11 +115,11 @@ def load_font(size: int, bold: bool = True) -> ImageFont.FreeTypeFont:
         bold : True = cari varian Bold terlebih dahulu (default),
                False = langsung pakai Regular
 
-    Fallback: jika bold tidak ditemukan → coba Regular → PIL default bitmap.
+    Fallback: jika custom tidak ditemukan → coba Regular → PIL default bitmap.
     """
-    path = _find_font(_FONT_BOLD if bold else _FONT_REGULAR)
+    path = _find_font(_FONT_CUSTOM if not bold else _FONT_REGULAR)
     if path is None and bold:
-        # Bold tidak ada di sistem, turun ke Regular
+        # Custom tidak ada di sistem, turun ke Regular
         path = _find_font(_FONT_REGULAR)
     if path:
         return ImageFont.truetype(path, size)
