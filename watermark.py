@@ -43,9 +43,9 @@ LOGO_MARGIN_Y = 0
 
 # Teks kanan bawah
 TEXT_COLOR = (255, 255, 0, 255)
-SHADOW_COLOR = (0, 0, 0, 180)
+SHADOW_COLOR = (120, 100, 0, 220)
 TEXT_MARGIN = 35
-TEXT_SHADOW_OFFSET = 3
+TEXT_SHADOW_OFFSET = 5
 TIMESTAMP_FONT_SIZE = 125
 TAG_FONT_SIZE = 125
 LINE_GAP = 30
@@ -73,13 +73,14 @@ EXIF_DATETIME_TAGS = [
 
 # Font. Path.home() membuat folder user Windows otomatis mengikuti komputer masing-masing. (untuk custom font)
 FONT_PATHS = [
+    Path.home() / "AppData/Local/Microsoft/Windows/Fonts/MiSansLatin-Regular.ttf",
     Path.home() / "AppData/Local/Microsoft/Windows/Fonts/Roboto-Regular.ttf",
     Path("C:/Windows/Fonts/arial.ttf"),
-    Path("C:/Windows/Fonts/calibri.ttf"),
-    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-    Path("/Library/Fonts/Arial.ttf"),
-    Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+    # Path("C:/Windows/Fonts/calibri.ttf"),
+    # Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+    # Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+    # Path("/Library/Fonts/Arial.ttf"),
+    # Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
 ]
 
 
