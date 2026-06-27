@@ -129,7 +129,8 @@ def format_datetime_id(dt):
     day = DAYS_ID[dt.weekday()]
     month = MONTHS_ID[dt.month]
     time_text = dt.strftime("%H.%M.%S")
-    return f"{day}, {dt.day} {month} {dt.year} {time_text} WIB"
+    date_text = f"{dt.day:02d}"
+    return f"{day}, {date_text} {month} {dt.year} {time_text} WIB"
 
 
 def draw_text_shadow(draw, position, text, font, scale):
