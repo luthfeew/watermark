@@ -231,9 +231,36 @@ def read_filename_datetime(image_path):
     )
 
 
-def get_timestamp(image_path, manual_datetime=None):
+def get_custom_date_timestamp(image_path, custom_date):
+    photo_datetime, source = read_exif_datetime(image_path)
+    if photo_datetime:
+        return (
+            datetime.datetime.combine(custom_date, photo_datetime.time()),
+            f"tanggal manual + jam {source}",
+        )
+
+    filename_date, filename_time = parse_filename_datetime(image_path)
+    if filename_time:
+        return (
+            datetime.datetime.combine(custom_date, filename_time),
+            "tanggal manual + jam nama file",
+        )
+
+    random_time = stable_random_time(image_path, custom_date)
+    if filename_date:
+        source = "tanggal manual + jam random dari nama file"
+    else:
+        source = "tanggal manual + jam random"
+
+    return datetime.datetime.combine(custom_date, random_time), source
+
+
+def get_timestamp(image_path, manual_datetime=None, manual_date=None):
     if manual_datetime:
         return manual_datetime, "manual"
+
+    if manual_date:
+        return get_custom_date_timestamp(image_path, manual_date)
 
     photo_datetime, source = read_exif_datetime(image_path)
     if photo_datetime:
@@ -511,7 +538,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Tambah logo dan timestamp ke foto.")
     parser.add_argument("images", nargs="*", help="File gambar atau folder. Kosong = folder script.")
     parser.add_argument("--recursive", "-r", action="store_true", help="Scan subfolder.")
-    parser.add_argument("--datetime", dest="datetime_text", help="Tanggal manual: YYYY-MM-DD HH:MM:SS")
+    parser.add_argument(
+        "--datetime",
+        dest="datetime_text",
+        help="Tanggal/jam manual: YYYY-MM-DD HH:MM:SS atau tanggal saja YYYY-MM-DD.",
+    )
     parser.add_argument(
         "--replace-date",
         dest="replace_date_text",
@@ -527,14 +558,19 @@ def parse_args():
     return parser.parse_args()
 
 
-def parse_manual_datetime(datetime_text):
+def parse_manual_timestamp(datetime_text):
     if not datetime_text:
-        return None
+        return None, None
 
     try:
-        return datetime.datetime.strptime(datetime_text, MANUAL_DATETIME_FORMAT)
+        return datetime.datetime.strptime(datetime_text, MANUAL_DATETIME_FORMAT), None
     except ValueError:
-        print("Format --datetime salah. Gunakan: YYYY-MM-DD HH:MM:SS")
+        pass
+
+    try:
+        return None, datetime.datetime.strptime(datetime_text, MANUAL_DATE_FORMAT).date()
+    except ValueError:
+        print("Format --datetime salah. Gunakan: YYYY-MM-DD HH:MM:SS atau YYYY-MM-DD")
         sys.exit(1)
 
 
@@ -549,11 +585,11 @@ def parse_manual_date(date_text):
         sys.exit(1)
 
 
-def process_image(image_path, args, logo_image, manual_datetime, replace_date):
+def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date):
     if args.replace and replace_date:
         timestamp, source = get_replace_date_timestamp(image_path, replace_date)
     else:
-        timestamp, source = get_timestamp(image_path, manual_datetime)
+        timestamp, source = get_timestamp(image_path, manual_datetime, manual_date)
     output_path = make_output_path(image_path, args.output_dir, args.suffix)
 
     if args.replace:
@@ -596,7 +632,7 @@ def main():
             print_exif_info(image_path)
         return
 
-    manual_datetime = parse_manual_datetime(args.datetime_text)
+    manual_datetime, manual_date = parse_manual_timestamp(args.datetime_text)
     replace_date = parse_manual_date(args.replace_date_text)
     if replace_date:
         args.replace = True
@@ -623,7 +659,7 @@ def main():
     success = 0
     for image_path in images:
         try:
-            process_image(image_path, args, logo_image, manual_datetime, replace_date)
+            process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date)
             success += 1
         except Exception as error:
             print(f"Gagal: {image_path}: {error}")
