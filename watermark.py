@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import datetime
+import hashlib
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -65,6 +67,14 @@ MONTHS_ID = [
 ]
 EXIF_DATETIME_FORMAT = "%Y:%m:%d %H:%M:%S"
 MANUAL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+MANUAL_DATE_FORMAT = "%Y-%m-%d"
+
+# Jika nama file hanya punya tanggal tanpa jam, jam akan dibuat stabil dari nama file.
+RANDOM_TIME_START = datetime.time(9, 0, 0)
+RANDOM_TIME_BLOCK_START = datetime.time(12, 0, 0)
+RANDOM_TIME_BLOCK_END = datetime.time(13, 0, 0)
+RANDOM_TIME_END = datetime.time(15, 0, 0)
+FILENAME_DATETIME_RE = re.compile(r"(?P<date>(?:19|20)\d{6})(?:[ _.-]?(?P<time>[0-2]\d[0-5]\d[0-5]\d))?")
 EXIF_DATETIME_TAGS = [
     (36867, "DateTimeOriginal"),
     (36868, "DateTimeDigitized"),
@@ -151,6 +161,72 @@ def read_exif_datetime(image_path):
     return None, "EXIF ada tapi tidak ada tanggal"
 
 
+def parse_filename_datetime(image_path):
+    name = Path(image_path).stem
+
+    for match in FILENAME_DATETIME_RE.finditer(name):
+        date_text = match.group("date")
+        time_text = match.group("time")
+
+        try:
+            date_value = datetime.datetime.strptime(date_text, "%Y%m%d").date()
+        except ValueError:
+            continue
+
+        time_value = None
+        if time_text:
+            try:
+                time_value = datetime.datetime.strptime(time_text, "%H%M%S").time()
+            except ValueError:
+                time_value = None
+
+        return date_value, time_value
+
+    return None, None
+
+
+def stable_random_time(image_path, date_value):
+    morning_seconds = (
+        datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_START)
+        - datetime.datetime.combine(date_value, RANDOM_TIME_START)
+    ).seconds
+    afternoon_seconds = (
+        datetime.datetime.combine(date_value, RANDOM_TIME_END)
+        - datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_END)
+    ).seconds
+    total_seconds = morning_seconds + afternoon_seconds
+
+    seed_text = f"{Path(image_path).name}|{date_value.isoformat()}"
+    seed_number = int.from_bytes(hashlib.sha256(seed_text.encode("utf-8")).digest()[:8], "big")
+    offset = seed_number % total_seconds
+
+    if offset < morning_seconds:
+        base = datetime.datetime.combine(date_value, RANDOM_TIME_START)
+        return (base + datetime.timedelta(seconds=offset)).time()
+
+    base = datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_END)
+    return (base + datetime.timedelta(seconds=offset - morning_seconds)).time()
+
+
+def read_filename_datetime(image_path):
+    date_value, time_value = parse_filename_datetime(image_path)
+
+    if not date_value:
+        return None, "nama file tidak berisi tanggal"
+
+    if time_value:
+        return (
+            datetime.datetime.combine(date_value, time_value),
+            "nama file",
+        )
+
+    random_time = stable_random_time(image_path, date_value)
+    return (
+        datetime.datetime.combine(date_value, random_time),
+        "nama file + jam random",
+    )
+
+
 def get_timestamp(image_path, manual_datetime=None):
     if manual_datetime:
         return manual_datetime, "manual"
@@ -159,7 +235,41 @@ def get_timestamp(image_path, manual_datetime=None):
     if photo_datetime:
         return photo_datetime, source
 
-    return datetime.datetime.now(), "fallback waktu sekarang"
+    filename_datetime, source = read_filename_datetime(image_path)
+    if filename_datetime:
+        return filename_datetime, source
+
+    return datetime.datetime.now().replace(microsecond=0), "fallback waktu sekarang"
+
+
+def get_replace_date_timestamp(image_path, replacement_date):
+    filename_date, filename_time = parse_filename_datetime(image_path)
+
+    if filename_time:
+        return (
+            datetime.datetime.combine(replacement_date, filename_time),
+            "tanggal manual + jam nama file",
+        )
+
+    photo_datetime, source = read_exif_datetime(image_path)
+    if photo_datetime:
+        return (
+            datetime.datetime.combine(replacement_date, photo_datetime.time()),
+            f"tanggal manual + jam {source}",
+        )
+
+    if filename_date:
+        random_time = stable_random_time(image_path, replacement_date)
+        return (
+            datetime.datetime.combine(replacement_date, random_time),
+            "tanggal manual + jam random",
+        )
+
+    now = datetime.datetime.now().replace(microsecond=0)
+    return (
+        datetime.datetime.combine(replacement_date, now.time()),
+        "tanggal manual + fallback jam sekarang",
+    )
 
 
 def print_exif_info(image_path):
@@ -364,6 +474,11 @@ def parse_args():
     parser.add_argument("images", nargs="*", help="File gambar atau folder. Kosong = folder script.")
     parser.add_argument("--recursive", "-r", action="store_true", help="Scan subfolder.")
     parser.add_argument("--datetime", dest="datetime_text", help="Tanggal manual: YYYY-MM-DD HH:MM:SS")
+    parser.add_argument(
+        "--replace-date",
+        dest="replace_date_text",
+        help="Mode replace: ganti tanggal ke YYYY-MM-DD, jam tetap dari nama file/metadata jika ada.",
+    )
     parser.add_argument("--logo", help="Path logo. Default: logo.jpg di folder script.")
     parser.add_argument("--tag", help="Teks tambahan di bawah timestamp.")
     parser.add_argument("--output-dir", help="Folder output.")
@@ -385,8 +500,22 @@ def parse_manual_datetime(datetime_text):
         sys.exit(1)
 
 
-def process_image(image_path, args, logo_path, manual_datetime):
-    timestamp, source = get_timestamp(image_path, manual_datetime)
+def parse_manual_date(date_text):
+    if not date_text:
+        return None
+
+    try:
+        return datetime.datetime.strptime(date_text, MANUAL_DATE_FORMAT).date()
+    except ValueError:
+        print("Format --replace-date salah. Gunakan: YYYY-MM-DD")
+        sys.exit(1)
+
+
+def process_image(image_path, args, logo_path, manual_datetime, replace_date):
+    if args.replace and replace_date:
+        timestamp, source = get_replace_date_timestamp(image_path, replace_date)
+    else:
+        timestamp, source = get_timestamp(image_path, manual_datetime)
     output_path = make_output_path(image_path, args.output_dir, args.suffix)
 
     if args.replace:
@@ -430,6 +559,10 @@ def main():
         return
 
     manual_datetime = parse_manual_datetime(args.datetime_text)
+    replace_date = parse_manual_date(args.replace_date_text)
+    if replace_date:
+        args.replace = True
+
     logo_path = resolve_logo(args.logo)
     inputs = args.images or [str(Path(__file__).parent)]
 
@@ -448,7 +581,7 @@ def main():
     success = 0
     for image_path in images:
         try:
-            process_image(image_path, args, logo_path, manual_datetime)
+            process_image(image_path, args, logo_path, manual_datetime, replace_date)
             success += 1
         except Exception as error:
             print(f"Gagal: {image_path}: {error}")
