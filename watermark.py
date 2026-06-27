@@ -2,9 +2,11 @@
 import argparse
 import datetime
 import hashlib
+import io
 import os
 import re
 import sys
+import urllib.request
 from pathlib import Path
 
 try:
@@ -26,6 +28,8 @@ except ImportError:
 # ==================================================
 
 DEFAULT_LOGO_FILENAME = "logo.jpg"
+DEFAULT_LOGO_URL = "https://github.com/luthfeew/watermark/blob/main/logo.jpg"
+LOGO_DOWNLOAD_TIMEOUT = 15
 DEFAULT_OUTPUT_SUFFIX = "_wm"
 DEFAULT_OUTPUT_QUALITY = 95
 DEFAULT_SCALE = 1.0
@@ -295,15 +299,12 @@ def print_exif_info(image_path):
 # WATERMARK
 # ==================================================
 
-def add_logo(overlay, logo_path, scale):
-    if not logo_path:
-        return
-    if not os.path.exists(logo_path):
-        print(f"Logo tidak ditemukan: {logo_path}")
+def add_logo(overlay, logo_image, scale):
+    if logo_image is None:
         return
 
     width, height = overlay.size
-    logo = Image.open(logo_path).convert("RGBA")
+    logo = logo_image.convert("RGBA")
     logo_height = int(height * LOGO_HEIGHT_RATIO)
     logo_width = int(logo.width * logo_height / logo.height)
     logo = logo.resize((logo_width, logo_height), Image.LANCZOS)
@@ -349,7 +350,7 @@ def add_timestamp_text(overlay, timestamp, tag, scale):
     draw_text_shadow(draw, (tag_x, tag_y), tag, tag_font, scale)
 
 
-def add_watermark(image_path, output_path, timestamp, logo_path=None, tag=None, scale=1.0, skip_logo=False, image=None):
+def add_watermark(image_path, output_path, timestamp, logo_image=None, tag=None, scale=1.0, skip_logo=False, image=None):
     base_image = image if image is not None else Image.open(image_path)
     base_image = base_image.convert("RGB")
     width, height = base_image.size
@@ -357,7 +358,7 @@ def add_watermark(image_path, output_path, timestamp, logo_path=None, tag=None, 
 
     overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     if not skip_logo:
-        add_logo(overlay, logo_path, final_scale)
+        add_logo(overlay, logo_image, final_scale)
     add_timestamp_text(overlay, timestamp, tag, final_scale)
 
     result = Image.alpha_composite(base_image.convert("RGBA"), overlay).convert("RGB")
@@ -413,12 +414,49 @@ def crop_keep_ratio(image, crop_bottom):
 # FILE INPUT / OUTPUT
 # ==================================================
 
+def github_blob_url_to_raw(url):
+    if "github.com" in url and "/blob/" in url:
+        return url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/")
+    return url
+
+
+def open_logo_file(path):
+    try:
+        with Image.open(path) as image:
+            return image.convert("RGBA").copy()
+    except Exception as error:
+        print(f"Gagal membuka logo: {path} ({error})")
+        return None
+
+
+def download_logo_image(url):
+    download_url = github_blob_url_to_raw(url)
+
+    try:
+        print(f"Logo lokal tidak ditemukan. Ambil logo online tanpa menyimpan: {url}")
+        with urllib.request.urlopen(download_url, timeout=LOGO_DOWNLOAD_TIMEOUT) as response:
+            data = response.read()
+
+        with Image.open(io.BytesIO(data)) as image:
+            return image.convert("RGBA").copy()
+    except Exception as error:
+        print(f"Gagal ambil logo online: {error}")
+        return None
+
+
 def resolve_logo(cli_logo):
     if cli_logo:
-        return cli_logo
+        logo_image = open_logo_file(cli_logo)
+        exclude = {cli_logo} if logo_image is not None else set()
+        return logo_image, exclude
 
     default_logo = Path(__file__).parent / DEFAULT_LOGO_FILENAME
-    return str(default_logo) if default_logo.exists() else None
+    if default_logo.exists():
+        return open_logo_file(default_logo), {str(default_logo)}
+
+    # Tidak disimpan ke file. Setiap script dijalankan dan logo lokal tidak ada,
+    # logo akan diambil online lagi.
+    return download_logo_image(DEFAULT_LOGO_URL), set()
 
 
 def collect_images(inputs, recursive=False, exclude=None):
@@ -511,7 +549,7 @@ def parse_manual_date(date_text):
         sys.exit(1)
 
 
-def process_image(image_path, args, logo_path, manual_datetime, replace_date):
+def process_image(image_path, args, logo_image, manual_datetime, replace_date):
     if args.replace and replace_date:
         timestamp, source = get_replace_date_timestamp(image_path, replace_date)
     else:
@@ -541,7 +579,7 @@ def process_image(image_path, args, logo_path, manual_datetime, replace_date):
             image_path=image_path,
             output_path=output_path,
             timestamp=timestamp,
-            logo_path=logo_path,
+            logo_image=logo_image,
             tag=args.tag,
             scale=args.scale,
         )
@@ -563,13 +601,17 @@ def main():
     if replace_date:
         args.replace = True
 
-    logo_path = resolve_logo(args.logo)
+    if args.replace:
+        logo_image, logo_exclude = None, set()
+    else:
+        logo_image, logo_exclude = resolve_logo(args.logo)
+
     inputs = args.images or [str(Path(__file__).parent)]
 
     if args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
 
-    images = collect_images(inputs, recursive=args.recursive, exclude={logo_path} if logo_path else set())
+    images = collect_images(inputs, recursive=args.recursive, exclude=logo_exclude)
     if not images:
         print("Tidak ada gambar yang bisa diproses.")
         sys.exit(1)
@@ -581,7 +623,7 @@ def main():
     success = 0
     for image_path in images:
         try:
-            process_image(image_path, args, logo_path, manual_datetime, replace_date)
+            process_image(image_path, args, logo_image, manual_datetime, replace_date)
             success += 1
         except Exception as error:
             print(f"Gagal: {image_path}: {error}")
