@@ -4,6 +4,7 @@ import datetime
 import hashlib
 import io
 import os
+import random
 import re
 import sys
 import urllib.request
@@ -50,7 +51,7 @@ LOGO_MARGIN_Y = 0
 # Teks kanan bawah
 TEXT_COLOR = (255, 255, 0, 255)
 SHADOW_COLOR = (120, 100, 0, 220)
-TEXT_MARGIN = 40
+TEXT_MARGIN = 35
 TEXT_SHADOW_OFFSET = 5
 TIMESTAMP_FONT_SIZE = 125
 TAG_FONT_SIZE = 125
@@ -190,7 +191,7 @@ def parse_filename_datetime(image_path):
     return None, None
 
 
-def stable_random_time(image_path, date_value):
+def random_time_total_seconds(date_value):
     morning_seconds = (
         datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_START)
         - datetime.datetime.combine(date_value, RANDOM_TIME_START)
@@ -199,11 +200,14 @@ def stable_random_time(image_path, date_value):
         datetime.datetime.combine(date_value, RANDOM_TIME_END)
         - datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_END)
     ).seconds
-    total_seconds = morning_seconds + afternoon_seconds
+    return morning_seconds + afternoon_seconds
 
-    seed_text = f"{Path(image_path).name}|{date_value.isoformat()}"
-    seed_number = int.from_bytes(hashlib.sha256(seed_text.encode("utf-8")).digest()[:8], "big")
-    offset = seed_number % total_seconds
+
+def random_offset_to_time(date_value, offset):
+    morning_seconds = (
+        datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_START)
+        - datetime.datetime.combine(date_value, RANDOM_TIME_START)
+    ).seconds
 
     if offset < morning_seconds:
         base = datetime.datetime.combine(date_value, RANDOM_TIME_START)
@@ -213,6 +217,55 @@ def stable_random_time(image_path, date_value):
     return (base + datetime.timedelta(seconds=offset - morning_seconds)).time()
 
 
+def stable_random_time(image_path, date_value):
+    total_seconds = random_time_total_seconds(date_value)
+    seed_text = f"{Path(image_path).name}|{date_value.isoformat()}"
+    seed_number = int.from_bytes(hashlib.sha256(seed_text.encode("utf-8")).digest()[:8], "big")
+    return random_offset_to_time(date_value, seed_number % total_seconds)
+
+
+def image_key(image_path):
+    return str(Path(image_path).resolve())
+
+
+class OrderedRandomTimePlan:
+    def __init__(self, requests):
+        self.times = {}
+        grouped = {}
+
+        for image_path, date_value in requests:
+            grouped.setdefault(date_value, []).append(image_path)
+
+        for date_value, image_paths in grouped.items():
+            self._assign_times(date_value, image_paths)
+
+    def _assign_times(self, date_value, image_paths):
+        total_seconds = random_time_total_seconds(date_value)
+        count = len(image_paths)
+
+        seed_text = f"{date_value.isoformat()}|" + "|".join(str(Path(p).name) for p in image_paths)
+        seed_number = int.from_bytes(hashlib.sha256(seed_text.encode("utf-8")).digest()[:8], "big")
+        rng = random.Random(seed_number)
+
+        if count <= total_seconds:
+            offsets = sorted(rng.sample(range(total_seconds), count))
+        else:
+            offsets = sorted(rng.randrange(total_seconds) for _ in range(count))
+
+        for image_path, offset in zip(image_paths, offsets):
+            self.times[(image_key(image_path), date_value.isoformat())] = random_offset_to_time(date_value, offset)
+
+    def get(self, image_path, date_value):
+        key = (image_key(image_path), date_value.isoformat())
+        return self.times.get(key) or stable_random_time(image_path, date_value)
+
+
+def get_random_time(image_path, date_value, random_time_plan=None):
+    if random_time_plan is not None:
+        return random_time_plan.get(image_path, date_value)
+    return stable_random_time(image_path, date_value)
+
+
 def is_valid_photo_time(time_value):
     return (
         RANDOM_TIME_START <= time_value < RANDOM_TIME_BLOCK_START
@@ -220,18 +273,18 @@ def is_valid_photo_time(time_value):
     )
 
 
-def get_valid_exif_datetime_or_random(image_path, photo_datetime, source):
+def get_valid_exif_datetime_or_random(image_path, photo_datetime, source, random_time_plan=None):
     if is_valid_photo_time(photo_datetime.time()):
         return photo_datetime, source
 
-    random_time = stable_random_time(image_path, photo_datetime.date())
+    random_time = get_random_time(image_path, photo_datetime.date(), random_time_plan)
     return (
         datetime.datetime.combine(photo_datetime.date(), random_time),
         f"{source} (jam tidak valid → random)",
     )
 
 
-def read_filename_datetime(image_path):
+def read_filename_datetime(image_path, random_time_plan=None):
     date_value, time_value = parse_filename_datetime(image_path)
 
     if not date_value:
@@ -243,14 +296,14 @@ def read_filename_datetime(image_path):
             "nama file",
         )
 
-    random_time = stable_random_time(image_path, date_value)
+    random_time = get_random_time(image_path, date_value, random_time_plan)
     return (
         datetime.datetime.combine(date_value, random_time),
-        "nama file + jam random",
+        "nama file + jam random urut",
     )
 
 
-def get_custom_date_timestamp(image_path, custom_date):
+def get_custom_date_timestamp(image_path, custom_date, random_time_plan=None):
     photo_datetime, source = read_exif_datetime(image_path)
     if photo_datetime:
         if is_valid_photo_time(photo_datetime.time()):
@@ -259,7 +312,7 @@ def get_custom_date_timestamp(image_path, custom_date):
                 f"tanggal manual + jam {source}",
             )
 
-        random_time = stable_random_time(image_path, custom_date)
+        random_time = get_random_time(image_path, custom_date, random_time_plan)
         return (
             datetime.datetime.combine(custom_date, random_time),
             f"tanggal manual + jam random ({source} tidak valid)",
@@ -272,7 +325,7 @@ def get_custom_date_timestamp(image_path, custom_date):
             "tanggal manual + jam nama file",
         )
 
-    random_time = stable_random_time(image_path, custom_date)
+    random_time = get_random_time(image_path, custom_date, random_time_plan)
     if filename_date:
         source = "tanggal manual + jam random dari nama file"
     else:
@@ -281,25 +334,25 @@ def get_custom_date_timestamp(image_path, custom_date):
     return datetime.datetime.combine(custom_date, random_time), source
 
 
-def get_timestamp(image_path, manual_datetime=None, manual_date=None):
+def get_timestamp(image_path, manual_datetime=None, manual_date=None, random_time_plan=None):
     if manual_datetime:
         return manual_datetime, "manual"
 
     if manual_date:
-        return get_custom_date_timestamp(image_path, manual_date)
+        return get_custom_date_timestamp(image_path, manual_date, random_time_plan)
 
     photo_datetime, source = read_exif_datetime(image_path)
     if photo_datetime:
-        return get_valid_exif_datetime_or_random(image_path, photo_datetime, source)
+        return get_valid_exif_datetime_or_random(image_path, photo_datetime, source, random_time_plan)
 
-    filename_datetime, source = read_filename_datetime(image_path)
+    filename_datetime, source = read_filename_datetime(image_path, random_time_plan)
     if filename_datetime:
         return filename_datetime, source
 
     return datetime.datetime.now().replace(microsecond=0), "fallback waktu sekarang"
 
 
-def get_replace_date_timestamp(image_path, replacement_date):
+def get_replace_date_timestamp(image_path, replacement_date, random_time_plan=None):
     filename_date, filename_time = parse_filename_datetime(image_path)
 
     if filename_time:
@@ -316,14 +369,14 @@ def get_replace_date_timestamp(image_path, replacement_date):
                 f"tanggal manual + jam {source}",
             )
 
-        random_time = stable_random_time(image_path, replacement_date)
+        random_time = get_random_time(image_path, replacement_date, random_time_plan)
         return (
             datetime.datetime.combine(replacement_date, random_time),
             f"tanggal manual + jam random ({source} tidak valid)",
         )
 
     if filename_date:
-        random_time = stable_random_time(image_path, replacement_date)
+        random_time = get_random_time(image_path, replacement_date, random_time_plan)
         return (
             datetime.datetime.combine(replacement_date, random_time),
             "tanggal manual + jam random",
@@ -334,6 +387,57 @@ def get_replace_date_timestamp(image_path, replacement_date):
         datetime.datetime.combine(replacement_date, now.time()),
         "tanggal manual + fallback jam sekarang",
     )
+
+
+def get_random_time_request_date(image_path, args, manual_datetime=None, manual_date=None, replace_date=None):
+    if manual_datetime:
+        return None
+
+    if args.replace and replace_date:
+        filename_date, filename_time = parse_filename_datetime(image_path)
+        if filename_time:
+            return None
+
+        photo_datetime, _ = read_exif_datetime(image_path)
+        if photo_datetime:
+            return None if is_valid_photo_time(photo_datetime.time()) else replace_date
+
+        return replace_date if filename_date else None
+
+    if manual_date:
+        photo_datetime, _ = read_exif_datetime(image_path)
+        if photo_datetime:
+            return None if is_valid_photo_time(photo_datetime.time()) else manual_date
+
+        _, filename_time = parse_filename_datetime(image_path)
+        return None if filename_time else manual_date
+
+    photo_datetime, _ = read_exif_datetime(image_path)
+    if photo_datetime:
+        return None if is_valid_photo_time(photo_datetime.time()) else photo_datetime.date()
+
+    filename_date, filename_time = parse_filename_datetime(image_path)
+    if filename_date and not filename_time:
+        return filename_date
+
+    return None
+
+
+def build_random_time_plan(images, args, manual_datetime=None, manual_date=None, replace_date=None):
+    requests = []
+
+    for image_path in images:
+        date_value = get_random_time_request_date(
+            image_path,
+            args,
+            manual_datetime=manual_datetime,
+            manual_date=manual_date,
+            replace_date=replace_date,
+        )
+        if date_value:
+            requests.append((image_path, date_value))
+
+    return OrderedRandomTimePlan(requests)
 
 
 def print_exif_info(image_path):
@@ -619,11 +723,11 @@ def parse_manual_date(date_text):
         sys.exit(1)
 
 
-def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date):
+def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, random_time_plan):
     if args.replace and replace_date:
-        timestamp, source = get_replace_date_timestamp(image_path, replace_date)
+        timestamp, source = get_replace_date_timestamp(image_path, replace_date, random_time_plan)
     else:
-        timestamp, source = get_timestamp(image_path, manual_datetime, manual_date)
+        timestamp, source = get_timestamp(image_path, manual_datetime, manual_date, random_time_plan)
     output_path = make_output_path(image_path, args.output_dir, args.suffix)
 
     if args.replace:
@@ -693,6 +797,14 @@ def main():
         print("Tidak ada gambar yang bisa diproses.")
         sys.exit(1)
 
+    random_time_plan = build_random_time_plan(
+        images,
+        args,
+        manual_datetime=manual_datetime,
+        manual_date=manual_date,
+        replace_date=replace_date,
+    )
+
     font_path = find_font() or "PIL default"
     print(f"Font  : {font_path}")
     print(f"Total : {len(images)} file\n")
@@ -700,7 +812,7 @@ def main():
     success = 0
     for image_path in images:
         try:
-            process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date)
+            process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, random_time_plan)
             success += 1
         except Exception as error:
             print(f"Gagal: {image_path}: {error}")
