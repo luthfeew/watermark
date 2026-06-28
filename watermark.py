@@ -50,7 +50,7 @@ LOGO_MARGIN_Y = 0
 # Teks kanan bawah
 TEXT_COLOR = (255, 255, 0, 255)
 SHADOW_COLOR = (120, 100, 0, 220)
-TEXT_MARGIN = 35
+TEXT_MARGIN = 40
 TEXT_SHADOW_OFFSET = 5
 TIMESTAMP_FONT_SIZE = 125
 TAG_FONT_SIZE = 125
@@ -213,6 +213,24 @@ def stable_random_time(image_path, date_value):
     return (base + datetime.timedelta(seconds=offset - morning_seconds)).time()
 
 
+def is_valid_photo_time(time_value):
+    return (
+        RANDOM_TIME_START <= time_value < RANDOM_TIME_BLOCK_START
+        or RANDOM_TIME_BLOCK_END <= time_value < RANDOM_TIME_END
+    )
+
+
+def get_valid_exif_datetime_or_random(image_path, photo_datetime, source):
+    if is_valid_photo_time(photo_datetime.time()):
+        return photo_datetime, source
+
+    random_time = stable_random_time(image_path, photo_datetime.date())
+    return (
+        datetime.datetime.combine(photo_datetime.date(), random_time),
+        f"{source} (jam tidak valid → random)",
+    )
+
+
 def read_filename_datetime(image_path):
     date_value, time_value = parse_filename_datetime(image_path)
 
@@ -235,9 +253,16 @@ def read_filename_datetime(image_path):
 def get_custom_date_timestamp(image_path, custom_date):
     photo_datetime, source = read_exif_datetime(image_path)
     if photo_datetime:
+        if is_valid_photo_time(photo_datetime.time()):
+            return (
+                datetime.datetime.combine(custom_date, photo_datetime.time()),
+                f"tanggal manual + jam {source}",
+            )
+
+        random_time = stable_random_time(image_path, custom_date)
         return (
-            datetime.datetime.combine(custom_date, photo_datetime.time()),
-            f"tanggal manual + jam {source}",
+            datetime.datetime.combine(custom_date, random_time),
+            f"tanggal manual + jam random ({source} tidak valid)",
         )
 
     filename_date, filename_time = parse_filename_datetime(image_path)
@@ -265,7 +290,7 @@ def get_timestamp(image_path, manual_datetime=None, manual_date=None):
 
     photo_datetime, source = read_exif_datetime(image_path)
     if photo_datetime:
-        return photo_datetime, source
+        return get_valid_exif_datetime_or_random(image_path, photo_datetime, source)
 
     filename_datetime, source = read_filename_datetime(image_path)
     if filename_datetime:
@@ -285,9 +310,16 @@ def get_replace_date_timestamp(image_path, replacement_date):
 
     photo_datetime, source = read_exif_datetime(image_path)
     if photo_datetime:
+        if is_valid_photo_time(photo_datetime.time()):
+            return (
+                datetime.datetime.combine(replacement_date, photo_datetime.time()),
+                f"tanggal manual + jam {source}",
+            )
+
+        random_time = stable_random_time(image_path, replacement_date)
         return (
-            datetime.datetime.combine(replacement_date, photo_datetime.time()),
-            f"tanggal manual + jam {source}",
+            datetime.datetime.combine(replacement_date, random_time),
+            f"tanggal manual + jam random ({source} tidak valid)",
         )
 
     if filename_date:
