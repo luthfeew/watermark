@@ -550,6 +550,7 @@ def parse_args():
         help="Mode replace: ganti tanggal ke YYYY-MM-DD, jam tetap dari nama file/metadata jika ada.",
     )
     parser.add_argument("--logo", help="Path logo. Default: logo.jpg di folder script.")
+    parser.add_argument("--no-logo", action="store_true", help="Tambah watermark tanpa logo.")
     parser.add_argument("--tag", help="Teks tambahan di bawah timestamp.")
     parser.add_argument("--output-dir", help="Folder output.")
     parser.add_argument("--suffix", default=DEFAULT_OUTPUT_SUFFIX, help="Suffix output.")
@@ -619,6 +620,7 @@ def process_image(image_path, args, logo_image, manual_datetime, manual_date, re
             logo_image=logo_image,
             tag=args.tag,
             scale=args.scale,
+            skip_logo=args.no_logo,
         )
 
     print(f"OK: {Path(image_path).name} -> {output_path} [{source}]")
@@ -638,8 +640,14 @@ def main():
     if replace_date:
         args.replace = True
 
-    if args.replace:
-        logo_image, logo_exclude = None, set()
+    if args.replace or args.no_logo:
+        logo_image = None
+        logo_exclude = set()
+        if args.logo:
+            logo_exclude.add(args.logo)
+        default_logo = Path(__file__).parent / DEFAULT_LOGO_FILENAME
+        if default_logo.exists():
+            logo_exclude.add(str(default_logo))
     else:
         logo_image, logo_exclude = resolve_logo(args.logo)
 
