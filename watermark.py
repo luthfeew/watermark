@@ -51,7 +51,7 @@ LOGO_MARGIN_Y = 0
 # Teks kanan bawah
 TEXT_COLOR = (255, 255, 0, 255)
 SHADOW_COLOR = (120, 100, 0, 220)
-TEXT_MARGIN = 35
+TEXT_MARGIN = 50
 TEXT_SHADOW_OFFSET = 5
 TIMESTAMP_FONT_SIZE = 125
 TAG_FONT_SIZE = 125
@@ -389,7 +389,18 @@ def get_replace_date_timestamp(image_path, replacement_date, random_time_plan=No
     )
 
 
-def get_random_time_request_date(image_path, args, manual_datetime=None, manual_date=None, replace_date=None):
+def get_forced_random_timestamp(image_path, forced_date, random_time_plan=None):
+    random_time = get_random_time(image_path, forced_date, random_time_plan)
+    return (
+        datetime.datetime.combine(forced_date, random_time),
+        "tanggal manual + jam random urut",
+    )
+
+
+def get_random_time_request_date(image_path, args, manual_datetime=None, manual_date=None, replace_date=None, forced_random_date=None):
+    if forced_random_date:
+        return forced_random_date
+
     if manual_datetime:
         return None
 
@@ -423,7 +434,7 @@ def get_random_time_request_date(image_path, args, manual_datetime=None, manual_
     return None
 
 
-def build_random_time_plan(images, args, manual_datetime=None, manual_date=None, replace_date=None):
+def build_random_time_plan(images, args, manual_datetime=None, manual_date=None, replace_date=None, forced_random_date=None):
     requests = []
 
     for image_path in images:
@@ -433,6 +444,7 @@ def build_random_time_plan(images, args, manual_datetime=None, manual_date=None,
             manual_datetime=manual_datetime,
             manual_date=manual_date,
             replace_date=replace_date,
+            forced_random_date=forced_random_date,
         )
         if date_value:
             requests.append((image_path, date_value))
@@ -681,6 +693,11 @@ def parse_args():
         help="Tanggal/jam manual: YYYY-MM-DD HH:MM:SS atau tanggal saja YYYY-MM-DD.",
     )
     parser.add_argument(
+        "--random-time",
+        action="store_true",
+        help="Pakai tanggal dari --datetime, tapi jam dibuat random urut tanpa ambil EXIF/nama file.",
+    )
+    parser.add_argument(
         "--replace-date",
         dest="replace_date_text",
         help="Mode replace: ganti tanggal ke YYYY-MM-DD, jam tetap dari nama file/metadata jika ada.",
@@ -723,9 +740,11 @@ def parse_manual_date(date_text):
         sys.exit(1)
 
 
-def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, random_time_plan):
+def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, forced_random_date, random_time_plan):
     if args.replace and replace_date:
         timestamp, source = get_replace_date_timestamp(image_path, replace_date, random_time_plan)
+    elif forced_random_date:
+        timestamp, source = get_forced_random_timestamp(image_path, forced_random_date, random_time_plan)
     else:
         timestamp, source = get_timestamp(image_path, manual_datetime, manual_date, random_time_plan)
     output_path = make_output_path(image_path, args.output_dir, args.suffix)
@@ -773,6 +792,19 @@ def main():
 
     manual_datetime, manual_date = parse_manual_timestamp(args.datetime_text)
     replace_date = parse_manual_date(args.replace_date_text)
+    forced_random_date = None
+
+    if args.random_time:
+        if manual_datetime:
+            forced_random_date = manual_datetime.date()
+            manual_datetime = None
+        elif manual_date:
+            forced_random_date = manual_date
+            manual_date = None
+        else:
+            print("--random-time harus dipakai bersama --datetime YYYY-MM-DD")
+            sys.exit(1)
+
     if replace_date:
         args.replace = True
 
@@ -803,6 +835,7 @@ def main():
         manual_datetime=manual_datetime,
         manual_date=manual_date,
         replace_date=replace_date,
+        forced_random_date=forced_random_date,
     )
 
     font_path = find_font() or "PIL default"
@@ -812,7 +845,7 @@ def main():
     success = 0
     for image_path in images:
         try:
-            process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, random_time_plan)
+            process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, forced_random_date, random_time_plan)
             success += 1
         except Exception as error:
             print(f"Gagal: {image_path}: {error}")
