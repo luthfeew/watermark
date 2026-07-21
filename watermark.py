@@ -57,6 +57,13 @@ TIMESTAMP_FONT_SIZE = 125
 TAG_FONT_SIZE = 125
 LINE_GAP = 30
 
+# Dua baris teks tetap di bawah timestamp (aktif hanya jika --caption dipakai)
+CAPTION_LINE_1 = "Kecamatan Karawang Timur, Karawang 41371"
+CAPTION_LINE_2 = "Indonesia"
+CAPTION_GAP      = 45     # jarak timestamp ↔ caption line 1
+CAPTION_LINE_GAP = 8      # jarak caption line 1 ↔ caption line 2
+CAPTION_BOTTOM   = 75     # jarak caption line 2 ke tepi bawah foto
+
 # Mode replace timestamp lama
 CROP_SCAN_BOTTOM_RATIO = 0.15    # area bawah yang discan
 CROP_PADDING_FACTOR = 1.4
@@ -494,39 +501,61 @@ def add_logo(overlay, logo_image, scale):
     overlay.paste(logo, (x, y), logo)
 
 
-def add_timestamp_text(overlay, timestamp, tag, scale):
+def add_timestamp_text(overlay, timestamp, tag, scale, caption=False):
     width, height = overlay.size
     draw = ImageDraw.Draw(overlay)
     margin = scaled(TEXT_MARGIN, scale)
+    gap    = scaled(LINE_GAP, scale)
+
     timestamp_font = load_font(scaled(TIMESTAMP_FONT_SIZE, scale))
-    tag_font = load_font(scaled(TAG_FONT_SIZE, scale))
+    tag_font       = load_font(scaled(TAG_FONT_SIZE, scale))
+
     timestamp_text = format_datetime_id(timestamp)
 
-    timestamp_box = draw.textbbox((0, 0), timestamp_text, font=timestamp_font)
-    timestamp_width = timestamp_box[2] - timestamp_box[0]
-    timestamp_height = timestamp_box[3] - timestamp_box[1]
+    def text_size(text, font):
+        box = draw.textbbox((0, 0), text, font=font)
+        return box[2] - box[0], box[3] - box[1]
 
-    if not tag:
-        x = width - margin - timestamp_width
-        y = height - margin - timestamp_height
-        draw_text_shadow(draw, (x, y), timestamp_text, timestamp_font, scale)
-        return
+    ts_w, ts_h = text_size(timestamp_text, timestamp_font)
 
-    tag_box = draw.textbbox((0, 0), tag, font=tag_font)
-    tag_width = tag_box[2] - tag_box[0]
-    tag_height = tag_box[3] - tag_box[1]
-    line_gap = scaled(LINE_GAP, scale)
+    # Hitung posisi dari bawah ke atas
+    # Urutan (bawah → atas): tag → caption_line_2 → caption_line_1 → timestamp
+    if tag:
+        tag_w, tag_h = text_size(tag, tag_font)
+        bottom_y = height - margin - tag_h
+    else:
+        tag_w = tag_h = 0
+        bottom_y = height - margin
 
-    tag_x = width - margin - tag_width
-    tag_y = height - margin - tag_height
-    timestamp_x = width - margin - timestamp_width
-    timestamp_y = tag_y - line_gap - timestamp_height
+    if caption:
+        c1_w, c1_h = text_size(CAPTION_LINE_1, timestamp_font)
+        c2_w, c2_h = text_size(CAPTION_LINE_2, timestamp_font)
+        cap_gap      = scaled(CAPTION_GAP,      scale)
+        cap_line_gap = scaled(CAPTION_LINE_GAP, scale)
+        cap_bottom   = scaled(CAPTION_BOTTOM,   scale)
+        if tag:
+            c2_y = bottom_y - cap_gap - c2_h
+        else:
+            c2_y = height - cap_bottom - c2_h
+        c1_y = c2_y - cap_line_gap - c1_h
+        ts_y = c1_y - cap_gap - ts_h
+    else:
+        if tag:
+            ts_y = bottom_y - gap - ts_h
+        else:
+            ts_y = height - margin - ts_h
 
-    draw_text_shadow(draw, (timestamp_x, timestamp_y), timestamp_text, timestamp_font, scale)
-    draw_text_shadow(draw, (tag_x, tag_y), tag, tag_font, scale)
+    draw_text_shadow(draw, (width - margin - ts_w, ts_y), timestamp_text, timestamp_font, scale)
+
+    if caption:
+        draw_text_shadow(draw, (width - margin - c1_w, c1_y), CAPTION_LINE_1, timestamp_font, scale)
+        draw_text_shadow(draw, (width - margin - c2_w, c2_y), CAPTION_LINE_2, timestamp_font, scale)
+
+    if tag:
+        draw_text_shadow(draw, (width - margin - tag_w, bottom_y), tag, tag_font, scale)
 
 
-def add_watermark(image_path, output_path, timestamp, logo_image=None, tag=None, scale=1.0, skip_logo=False, image=None):
+def add_watermark(image_path, output_path, timestamp, logo_image=None, tag=None, scale=1.0, skip_logo=False, image=None, caption=False):
     base_image = image if image is not None else Image.open(image_path)
     base_image = base_image.convert("RGB")
     width, height = base_image.size
@@ -535,7 +564,7 @@ def add_watermark(image_path, output_path, timestamp, logo_image=None, tag=None,
     overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     if not skip_logo:
         add_logo(overlay, logo_image, final_scale)
-    add_timestamp_text(overlay, timestamp, tag, final_scale)
+    add_timestamp_text(overlay, timestamp, tag, final_scale, caption=caption)
 
     result = Image.alpha_composite(base_image.convert("RGBA"), overlay).convert("RGB")
     result.save(output_path, quality=DEFAULT_OUTPUT_QUALITY)
@@ -705,6 +734,7 @@ def parse_args():
     parser.add_argument("--logo", help="Path logo. Default: logo.jpg di folder script.")
     parser.add_argument("--no-logo", action="store_true", help="Tambah watermark tanpa logo.")
     parser.add_argument("--tag", help="Teks tambahan di bawah timestamp.")
+    parser.add_argument("--caption", action="store_true", help="Tampilkan caption proyek di bawah timestamp.")
     parser.add_argument("--output-dir", help="Folder output.")
     parser.add_argument("--suffix", default=DEFAULT_OUTPUT_SUFFIX, help="Suffix output.")
     parser.add_argument("--scale", type=float, default=DEFAULT_SCALE, help="Skala watermark.")
@@ -766,6 +796,7 @@ def process_image(image_path, args, logo_image, manual_datetime, manual_date, re
             scale=args.scale,
             skip_logo=True,
             image=cropped,
+            caption=args.caption,
         )
     else:
         add_watermark(
@@ -776,6 +807,7 @@ def process_image(image_path, args, logo_image, manual_datetime, manual_date, re
             tag=args.tag,
             scale=args.scale,
             skip_logo=args.no_logo,
+            caption=args.caption,
         )
 
     print(f"OK: {Path(image_path).name} -> {output_path} [{source}]")
