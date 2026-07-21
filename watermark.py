@@ -695,7 +695,7 @@ def parse_args():
     parser.add_argument(
         "--random-time",
         action="store_true",
-        help="Pakai tanggal dari --datetime, tapi jam dibuat random urut tanpa ambil EXIF/nama file.",
+        help="Pakai tanggal dari --datetime atau --replace-date, tapi jam dibuat random urut tanpa ambil EXIF/nama file.",
     )
     parser.add_argument(
         "--replace-date",
@@ -741,10 +741,10 @@ def parse_manual_date(date_text):
 
 
 def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, forced_random_date, random_time_plan):
-    if args.replace and replace_date:
-        timestamp, source = get_replace_date_timestamp(image_path, replace_date, random_time_plan)
-    elif forced_random_date:
+    if forced_random_date:
         timestamp, source = get_forced_random_timestamp(image_path, forced_random_date, random_time_plan)
+    elif args.replace and replace_date:
+        timestamp, source = get_replace_date_timestamp(image_path, replace_date, random_time_plan)
     else:
         timestamp, source = get_timestamp(image_path, manual_datetime, manual_date, random_time_plan)
     output_path = make_output_path(image_path, args.output_dir, args.suffix)
@@ -794,6 +794,9 @@ def main():
     replace_date = parse_manual_date(args.replace_date_text)
     forced_random_date = None
 
+    if replace_date:
+        args.replace = True
+
     if args.random_time:
         if manual_datetime:
             forced_random_date = manual_datetime.date()
@@ -801,12 +804,11 @@ def main():
         elif manual_date:
             forced_random_date = manual_date
             manual_date = None
+        elif replace_date:
+            forced_random_date = replace_date
         else:
-            print("--random-time harus dipakai bersama --datetime YYYY-MM-DD")
+            print("--random-time harus dipakai bersama --datetime YYYY-MM-DD atau --replace-date YYYY-MM-DD")
             sys.exit(1)
-
-    if replace_date:
-        args.replace = True
 
     if args.replace or args.no_logo:
         logo_image = None
