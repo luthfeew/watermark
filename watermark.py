@@ -25,84 +25,81 @@ except ImportError:
 
 # ==================================================
 # CONFIG
-# Ubah nilai di bagian ini kalau mau atur tampilan watermark.
 # ==================================================
 
-DEFAULT_LOGO_FILENAME = "logo.jpg"
-DEFAULT_LOGO_URL = "https://github.com/luthfeew/watermark/blob/main/logo.jpg"
-LOGO_DOWNLOAD_TIMEOUT = 15
-DEFAULT_OUTPUT_SUFFIX = "_wm"
+DEFAULT_LOGO_FILENAME  = "logo.jpg"
+DEFAULT_LOGO_URL       = "https://github.com/luthfeew/watermark/blob/main/logo.jpg"
+LOGO_DOWNLOAD_TIMEOUT  = 15
+DEFAULT_OUTPUT_SUFFIX  = "_wm"
 DEFAULT_OUTPUT_QUALITY = 95
-DEFAULT_SCALE = 1.0
+DEFAULT_SCALE          = 1.0
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 # Skala umum
-BASE_IMAGE_WIDTH = 4000          # patokan skala untuk foto 4000px lebar
-MIN_SCALE = 0.35
-MAX_SCALE = 2.50
+BASE_IMAGE_WIDTH = 4000
+MIN_SCALE        = 0.35
+MAX_SCALE        = 2.50
 
 # Logo kanan atas
-LOGO_HEIGHT_RATIO = 0.19         # 0.19 = 19% dari tinggi foto
-LOGO_OPACITY = 220               # 0 transparan, 255 penuh
-LOGO_MARGIN_X = 0
-LOGO_MARGIN_Y = 0
+LOGO_HEIGHT_RATIO = 0.19    # 19% dari tinggi foto
+LOGO_OPACITY      = 220     # 0 transparan, 255 penuh
+LOGO_MARGIN_X     = 0
+LOGO_MARGIN_Y     = 0
 
 # Teks kanan bawah
-TEXT_COLOR = (255, 255, 0, 255)
-SHADOW_COLOR = (120, 100, 0, 220)
-TEXT_MARGIN = 50
+TEXT_COLOR         = (255, 255, 0, 255)
+SHADOW_COLOR       = (120, 100, 0, 220)
+TEXT_MARGIN        = 50
 TEXT_SHADOW_OFFSET = 5
 TIMESTAMP_FONT_SIZE = 125
-TAG_FONT_SIZE = 125
-LINE_GAP = 30
+TAG_FONT_SIZE       = 125
+LINE_GAP            = 30
 
-# Dua baris teks tetap di bawah timestamp (aktif hanya jika --caption dipakai)
-CAPTION_LINE_1 = "Kecamatan Karawang Timur, Karawang 41371"
-CAPTION_LINE_2 = "Indonesia"
-CAPTION_GAP      = 45     # jarak timestamp ↔ caption line 1
-CAPTION_LINE_GAP = 8      # jarak caption line 1 ↔ caption line 2
-CAPTION_BOTTOM   = 75     # jarak caption line 2 ke tepi bawah foto
+# Caption (aktif hanya jika --caption dipakai)
+CAPTION_LINE_1   = "Kecamatan Karawang Timur, Karawang 41371"
+CAPTION_LINE_2   = "Indonesia"
+CAPTION_GAP      = 45    # jarak timestamp ↔ caption line 1
+CAPTION_LINE_GAP = 8     # jarak caption line 1 ↔ caption line 2
+CAPTION_BOTTOM   = 75    # jarak caption line 2 ke tepi bawah foto
 
 # Mode replace timestamp lama
-CROP_SCAN_BOTTOM_RATIO = 0.15    # area bawah yang discan
-CROP_PADDING_FACTOR = 1.4
-YELLOW_MIN_RED = 180
-YELLOW_MIN_GREEN = 180
-YELLOW_MAX_BLUE = 100
+CROP_SCAN_BOTTOM_RATIO = 0.15
+CROP_PADDING_FACTOR    = 1.4
+YELLOW_MIN_RED         = 180
+YELLOW_MIN_GREEN       = 180
+YELLOW_MAX_BLUE        = 100
 
 # Format tanggal
-DAYS_ID = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
-MONTHS_ID = [
-    "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
-]
-EXIF_DATETIME_FORMAT = "%Y:%m:%d %H:%M:%S"
+DAYS_ID   = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+MONTHS_ID = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+             "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+EXIF_DATETIME_FORMAT   = "%Y:%m:%d %H:%M:%S"
 MANUAL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-MANUAL_DATE_FORMAT = "%Y-%m-%d"
+MANUAL_DATE_FORMAT     = "%Y-%m-%d"
 
-# Jika nama file hanya punya tanggal tanpa jam, jam akan dibuat stabil dari nama file.
-RANDOM_TIME_START = datetime.time(9, 0, 0)
+# Jam random saat nama file hanya punya tanggal (menghindari jam makan siang)
+RANDOM_TIME_START       = datetime.time(9, 0, 0)
 RANDOM_TIME_BLOCK_START = datetime.time(12, 0, 0)
-RANDOM_TIME_BLOCK_END = datetime.time(13, 0, 0)
-RANDOM_TIME_END = datetime.time(15, 0, 0)
-FILENAME_DATETIME_RE = re.compile(r"(?P<date>(?:19|20)\d{6})(?:[ _.-]?(?P<time>[0-2]\d[0-5]\d[0-5]\d))?")
+RANDOM_TIME_BLOCK_END   = datetime.time(13, 0, 0)
+RANDOM_TIME_END         = datetime.time(15, 0, 0)
+
+FILENAME_DATETIME_RE = re.compile(
+    r"(?P<date>(?:19|20)\d{6})(?:[ _.-]?(?P<time>[0-2]\d[0-5]\d[0-5]\d))?"
+)
 EXIF_DATETIME_TAGS = [
     (36867, "DateTimeOriginal"),
     (36868, "DateTimeDigitized"),
-    (306, "DateTime"),
+    (306,   "DateTime"),
 ]
 
-# Font. Path.home() membuat folder user Windows otomatis mengikuti komputer masing-masing. (untuk custom font)
+# Font — Path.home() otomatis menyesuaikan user Windows
 FONT_PATHS = [
     Path.home() / "AppData/Local/Microsoft/Windows/Fonts/MiSansLatin-Regular.ttf",
     Path.home() / "AppData/Local/Microsoft/Windows/Fonts/Roboto-Regular.ttf",
     Path("C:/Windows/Fonts/arial.ttf"),
-    # Path("C:/Windows/Fonts/calibri.ttf"),
     # Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
     # Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-    # Path("/Library/Fonts/Arial.ttf"),
-    # Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
 ]
 
 
@@ -110,23 +107,22 @@ FONT_PATHS = [
 # FONT & TEKS
 # ==================================================
 
+_font_path_cache = None
+
 def find_font():
-    for path in FONT_PATHS:
-        if path.exists():
-            return str(path)
-    return None
+    global _font_path_cache
+    if _font_path_cache is None:
+        _font_path_cache = next((str(p) for p in FONT_PATHS if p.exists()), "")
+    return _font_path_cache or None
 
 
 def load_font(size):
-    font_path = find_font()
-    if font_path:
-        return ImageFont.truetype(font_path, size)
-    return ImageFont.load_default()
+    path = find_font()
+    return ImageFont.truetype(path, size) if path else ImageFont.load_default()
 
 
 def auto_scale(width, manual_scale=1.0):
-    scale = (width / BASE_IMAGE_WIDTH) * manual_scale
-    return max(MIN_SCALE, min(scale, MAX_SCALE))
+    return max(MIN_SCALE, min((width / BASE_IMAGE_WIDTH) * manual_scale, MAX_SCALE))
 
 
 def scaled(value, scale):
@@ -134,18 +130,17 @@ def scaled(value, scale):
 
 
 def format_datetime_id(dt):
-    day = DAYS_ID[dt.weekday()]
-    month = MONTHS_ID[dt.month]
-    time_text = dt.strftime("%H.%M.%S")
-    date_text = f"{dt.day:02d}"
-    return f"{day}, {date_text} {month} {dt.year} {time_text} WIB"
+    return (
+        f"{DAYS_ID[dt.weekday()]}, {dt.day:02d} {MONTHS_ID[dt.month]}"
+        f" {dt.year} {dt.strftime('%H.%M.%S')} WIB"
+    )
 
 
 def draw_text_shadow(draw, position, text, font, scale):
-    x, y = position
+    x, y   = position
     offset = scaled(TEXT_SHADOW_OFFSET, scale)
     draw.text((x + offset, y + offset), text, font=font, fill=SHADOW_COLOR)
-    draw.text((x, y), text, font=font, fill=TEXT_COLOR)
+    draw.text((x, y),                   text, font=font, fill=TEXT_COLOR)
 
 
 # ==================================================
@@ -154,10 +149,10 @@ def draw_text_shadow(draw, position, text, font, scale):
 
 def read_exif_datetime(image_path):
     try:
-        with Image.open(image_path) as image:
-            exif = image._getexif()
-    except Exception as error:
-        return None, f"gagal baca EXIF ({error})"
+        with Image.open(image_path) as img:
+            exif = img._getexif()
+    except Exception as e:
+        return None, f"gagal baca EXIF ({e})"
 
     if not exif:
         return None, "tidak ada EXIF"
@@ -175,236 +170,150 @@ def read_exif_datetime(image_path):
 
 
 def parse_filename_datetime(image_path):
-    name = Path(image_path).stem
-
-    for match in FILENAME_DATETIME_RE.finditer(name):
-        date_text = match.group("date")
-        time_text = match.group("time")
-
+    """Kembalikan (date, time|None) dari nama file, atau (None, None)."""
+    for match in FILENAME_DATETIME_RE.finditer(Path(image_path).stem):
         try:
-            date_value = datetime.datetime.strptime(date_text, "%Y%m%d").date()
+            date = datetime.datetime.strptime(match.group("date"), "%Y%m%d").date()
         except ValueError:
             continue
 
-        time_value = None
-        if time_text:
+        time = None
+        if match.group("time"):
             try:
-                time_value = datetime.datetime.strptime(time_text, "%H%M%S").time()
+                time = datetime.datetime.strptime(match.group("time"), "%H%M%S").time()
             except ValueError:
-                time_value = None
+                pass
 
-        return date_value, time_value
+        return date, time
 
     return None, None
 
 
-def random_time_total_seconds(date_value):
-    morning_seconds = (
-        datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_START)
-        - datetime.datetime.combine(date_value, RANDOM_TIME_START)
-    ).seconds
-    afternoon_seconds = (
-        datetime.datetime.combine(date_value, RANDOM_TIME_END)
-        - datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_END)
-    ).seconds
-    return morning_seconds + afternoon_seconds
+def is_valid_photo_time(t):
+    """True jika jam berada di rentang kerja (bukan jam makan siang)."""
+    return (RANDOM_TIME_START <= t < RANDOM_TIME_BLOCK_START
+            or RANDOM_TIME_BLOCK_END <= t < RANDOM_TIME_END)
 
 
-def random_offset_to_time(date_value, offset):
-    morning_seconds = (
-        datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_START)
-        - datetime.datetime.combine(date_value, RANDOM_TIME_START)
-    ).seconds
-
-    if offset < morning_seconds:
-        base = datetime.datetime.combine(date_value, RANDOM_TIME_START)
-        return (base + datetime.timedelta(seconds=offset)).time()
-
-    base = datetime.datetime.combine(date_value, RANDOM_TIME_BLOCK_END)
-    return (base + datetime.timedelta(seconds=offset - morning_seconds)).time()
+def _random_time_total_seconds(date):
+    morning   = (datetime.datetime.combine(date, RANDOM_TIME_BLOCK_START)
+                 - datetime.datetime.combine(date, RANDOM_TIME_START)).seconds
+    afternoon = (datetime.datetime.combine(date, RANDOM_TIME_END)
+                 - datetime.datetime.combine(date, RANDOM_TIME_BLOCK_END)).seconds
+    return morning + afternoon
 
 
-def stable_random_time(image_path, date_value):
-    total_seconds = random_time_total_seconds(date_value)
-    seed_text = f"{Path(image_path).name}|{date_value.isoformat()}"
-    seed_number = int.from_bytes(hashlib.sha256(seed_text.encode("utf-8")).digest()[:8], "big")
-    return random_offset_to_time(date_value, seed_number % total_seconds)
+def _offset_to_time(date, offset):
+    morning = (datetime.datetime.combine(date, RANDOM_TIME_BLOCK_START)
+               - datetime.datetime.combine(date, RANDOM_TIME_START)).seconds
+    if offset < morning:
+        return (datetime.datetime.combine(date, RANDOM_TIME_START)
+                + datetime.timedelta(seconds=offset)).time()
+    return (datetime.datetime.combine(date, RANDOM_TIME_BLOCK_END)
+            + datetime.timedelta(seconds=offset - morning)).time()
 
 
-def image_key(image_path):
-    return str(Path(image_path).resolve())
+def stable_random_time(image_path, date):
+    total  = _random_time_total_seconds(date)
+    seed   = f"{Path(image_path).name}|{date.isoformat()}"
+    number = int.from_bytes(hashlib.sha256(seed.encode()).digest()[:8], "big")
+    return _offset_to_time(date, number % total)
 
 
 class OrderedRandomTimePlan:
+    """Menetapkan jam random yang berurutan untuk sekumpulan foto per tanggal."""
+
     def __init__(self, requests):
         self.times = {}
         grouped = {}
+        for path, date in requests:
+            grouped.setdefault(date, []).append(path)
+        for date, paths in grouped.items():
+            self._assign(date, paths)
 
-        for image_path, date_value in requests:
-            grouped.setdefault(date_value, []).append(image_path)
-
-        for date_value, image_paths in grouped.items():
-            self._assign_times(date_value, image_paths)
-
-    def _assign_times(self, date_value, image_paths):
-        total_seconds = random_time_total_seconds(date_value)
-        count = len(image_paths)
-
-        seed_text = f"{date_value.isoformat()}|" + "|".join(str(Path(p).name) for p in image_paths)
-        seed_number = int.from_bytes(hashlib.sha256(seed_text.encode("utf-8")).digest()[:8], "big")
-        rng = random.Random(seed_number)
-
-        if count <= total_seconds:
-            offsets = sorted(rng.sample(range(total_seconds), count))
-        else:
-            offsets = sorted(rng.randrange(total_seconds) for _ in range(count))
-
-        for image_path, offset in zip(image_paths, offsets):
-            self.times[(image_key(image_path), date_value.isoformat())] = random_offset_to_time(date_value, offset)
-
-    def get(self, image_path, date_value):
-        key = (image_key(image_path), date_value.isoformat())
-        return self.times.get(key) or stable_random_time(image_path, date_value)
-
-
-def get_random_time(image_path, date_value, random_time_plan=None):
-    if random_time_plan is not None:
-        return random_time_plan.get(image_path, date_value)
-    return stable_random_time(image_path, date_value)
-
-
-def is_valid_photo_time(time_value):
-    return (
-        RANDOM_TIME_START <= time_value < RANDOM_TIME_BLOCK_START
-        or RANDOM_TIME_BLOCK_END <= time_value < RANDOM_TIME_END
-    )
-
-
-def get_valid_exif_datetime_or_random(image_path, photo_datetime, source, random_time_plan=None):
-    if is_valid_photo_time(photo_datetime.time()):
-        return photo_datetime, source
-
-    random_time = get_random_time(image_path, photo_datetime.date(), random_time_plan)
-    return (
-        datetime.datetime.combine(photo_datetime.date(), random_time),
-        f"{source} (jam tidak valid → random)",
-    )
-
-
-def read_filename_datetime(image_path, random_time_plan=None):
-    date_value, time_value = parse_filename_datetime(image_path)
-
-    if not date_value:
-        return None, "nama file tidak berisi tanggal"
-
-    if time_value:
-        return (
-            datetime.datetime.combine(date_value, time_value),
-            "nama file",
+    def _assign(self, date, paths):
+        total = _random_time_total_seconds(date)
+        seed  = f"{date.isoformat()}|" + "|".join(Path(p).name for p in paths)
+        rng   = random.Random(int.from_bytes(hashlib.sha256(seed.encode()).digest()[:8], "big"))
+        offsets = sorted(
+            rng.sample(range(total), len(paths)) if len(paths) <= total
+            else [rng.randrange(total) for _ in paths]
         )
+        for path, offset in zip(paths, offsets):
+            self.times[(str(Path(path).resolve()), date.isoformat())] = _offset_to_time(date, offset)
 
-    random_time = get_random_time(image_path, date_value, random_time_plan)
-    return (
-        datetime.datetime.combine(date_value, random_time),
-        "nama file + jam random urut",
-    )
-
-
-def get_custom_date_timestamp(image_path, custom_date, random_time_plan=None):
-    photo_datetime, source = read_exif_datetime(image_path)
-    if photo_datetime:
-        if is_valid_photo_time(photo_datetime.time()):
-            return (
-                datetime.datetime.combine(custom_date, photo_datetime.time()),
-                f"tanggal manual + jam {source}",
-            )
-
-        random_time = get_random_time(image_path, custom_date, random_time_plan)
-        return (
-            datetime.datetime.combine(custom_date, random_time),
-            f"tanggal manual + jam random ({source} tidak valid)",
-        )
-
-    filename_date, filename_time = parse_filename_datetime(image_path)
-    if filename_time:
-        return (
-            datetime.datetime.combine(custom_date, filename_time),
-            "tanggal manual + jam nama file",
-        )
-
-    random_time = get_random_time(image_path, custom_date, random_time_plan)
-    if filename_date:
-        source = "tanggal manual + jam random dari nama file"
-    else:
-        source = "tanggal manual + jam random"
-
-    return datetime.datetime.combine(custom_date, random_time), source
+    def get(self, image_path, date):
+        return (self.times.get((str(Path(image_path).resolve()), date.isoformat()))
+                or stable_random_time(image_path, date))
 
 
-def get_timestamp(image_path, manual_datetime=None, manual_date=None, random_time_plan=None):
+def get_random_time(image_path, date, plan=None):
+    return plan.get(image_path, date) if plan else stable_random_time(image_path, date)
+
+
+def get_timestamp(image_path, manual_datetime=None, manual_date=None, plan=None):
+    """Tentukan timestamp akhir untuk satu foto."""
     if manual_datetime:
         return manual_datetime, "manual"
 
     if manual_date:
-        return get_custom_date_timestamp(image_path, manual_date, random_time_plan)
+        return _timestamp_from_custom_date(image_path, manual_date, plan)
 
-    photo_datetime, source = read_exif_datetime(image_path)
-    if photo_datetime:
-        return get_valid_exif_datetime_or_random(image_path, photo_datetime, source, random_time_plan)
+    dt, source = read_exif_datetime(image_path)
+    if dt:
+        return dt, source
 
-    filename_datetime, source = read_filename_datetime(image_path, random_time_plan)
-    if filename_datetime:
-        return filename_datetime, source
+    filename_date, filename_time = parse_filename_datetime(image_path)
+    if filename_date:
+        if filename_time:
+            return datetime.datetime.combine(filename_date, filename_time), "nama file"
+        t = get_random_time(image_path, filename_date, plan)
+        return datetime.datetime.combine(filename_date, t), "nama file + jam random urut"
 
     return datetime.datetime.now().replace(microsecond=0), "fallback waktu sekarang"
 
 
-def get_replace_date_timestamp(image_path, replacement_date, random_time_plan=None):
-    filename_date, filename_time = parse_filename_datetime(image_path)
+def _timestamp_from_custom_date(image_path, custom_date, plan=None):
+    """Gabungkan tanggal manual dengan jam terbaik yang tersedia."""
+    dt, source = read_exif_datetime(image_path)
+    if dt:
+        if is_valid_photo_time(dt.time()):
+            return datetime.datetime.combine(custom_date, dt.time()), f"tanggal manual + jam {source}"
+        t = get_random_time(image_path, custom_date, plan)
+        return datetime.datetime.combine(custom_date, t), f"tanggal manual + jam random ({source} tidak valid)"
 
+    _, filename_time = parse_filename_datetime(image_path)
     if filename_time:
-        return (
-            datetime.datetime.combine(replacement_date, filename_time),
-            "tanggal manual + jam nama file",
-        )
+        return datetime.datetime.combine(custom_date, filename_time), "tanggal manual + jam nama file"
 
-    photo_datetime, source = read_exif_datetime(image_path)
-    if photo_datetime:
-        if is_valid_photo_time(photo_datetime.time()):
-            return (
-                datetime.datetime.combine(replacement_date, photo_datetime.time()),
-                f"tanggal manual + jam {source}",
-            )
-
-        random_time = get_random_time(image_path, replacement_date, random_time_plan)
-        return (
-            datetime.datetime.combine(replacement_date, random_time),
-            f"tanggal manual + jam random ({source} tidak valid)",
-        )
-
-    if filename_date:
-        random_time = get_random_time(image_path, replacement_date, random_time_plan)
-        return (
-            datetime.datetime.combine(replacement_date, random_time),
-            "tanggal manual + jam random",
-        )
-
-    now = datetime.datetime.now().replace(microsecond=0)
-    return (
-        datetime.datetime.combine(replacement_date, now.time()),
-        "tanggal manual + fallback jam sekarang",
-    )
+    t = get_random_time(image_path, custom_date, plan)
+    return datetime.datetime.combine(custom_date, t), "tanggal manual + jam random"
 
 
-def get_forced_random_timestamp(image_path, forced_date, random_time_plan=None):
-    random_time = get_random_time(image_path, forced_date, random_time_plan)
-    return (
-        datetime.datetime.combine(forced_date, random_time),
-        "tanggal manual + jam random urut",
-    )
+def get_replace_date_timestamp(image_path, replacement_date, plan=None):
+    """Timestamp untuk mode --replace-date: tanggal diganti, jam dipertahankan."""
+    _, filename_time = parse_filename_datetime(image_path)
+    if filename_time:
+        return datetime.datetime.combine(replacement_date, filename_time), "tanggal manual + jam nama file"
+
+    dt, source = read_exif_datetime(image_path)
+    if dt:
+        if is_valid_photo_time(dt.time()):
+            return datetime.datetime.combine(replacement_date, dt.time()), f"tanggal manual + jam {source}"
+        t = get_random_time(image_path, replacement_date, plan)
+        return datetime.datetime.combine(replacement_date, t), f"tanggal manual + jam random ({source} tidak valid)"
+
+    t = get_random_time(image_path, replacement_date, plan)
+    return datetime.datetime.combine(replacement_date, t), "tanggal manual + jam random"
 
 
-def get_random_time_request_date(image_path, args, manual_datetime=None, manual_date=None, replace_date=None, forced_random_date=None):
+def get_forced_random_timestamp(image_path, date, plan=None):
+    t = get_random_time(image_path, date, plan)
+    return datetime.datetime.combine(date, t), "tanggal manual + jam random urut"
+
+
+def _needs_random_time_date(image_path, args, manual_datetime, manual_date, replace_date, forced_random_date):
+    """Kembalikan date jika foto ini perlu masuk OrderedRandomTimePlan, else None."""
     if forced_random_date:
         return forced_random_date
 
@@ -412,27 +321,25 @@ def get_random_time_request_date(image_path, args, manual_datetime=None, manual_
         return None
 
     if args.replace and replace_date:
-        filename_date, filename_time = parse_filename_datetime(image_path)
-        if filename_time:
+        _, ft = parse_filename_datetime(image_path)
+        if ft:
             return None
-
-        photo_datetime, _ = read_exif_datetime(image_path)
-        if photo_datetime:
-            return None if is_valid_photo_time(photo_datetime.time()) else replace_date
-
-        return replace_date if filename_date else None
+        dt, _ = read_exif_datetime(image_path)
+        if dt:
+            return None if is_valid_photo_time(dt.time()) else replace_date
+        return replace_date
 
     if manual_date:
-        photo_datetime, _ = read_exif_datetime(image_path)
-        if photo_datetime:
-            return None if is_valid_photo_time(photo_datetime.time()) else manual_date
+        dt, _ = read_exif_datetime(image_path)
+        if dt:
+            return None if is_valid_photo_time(dt.time()) else manual_date
+        _, ft = parse_filename_datetime(image_path)
+        return None if ft else manual_date
 
-        _, filename_time = parse_filename_datetime(image_path)
-        return None if filename_time else manual_date
-
-    photo_datetime, _ = read_exif_datetime(image_path)
-    if photo_datetime:
-        return None if is_valid_photo_time(photo_datetime.time()) else photo_datetime.date()
+    # Normal mode: EXIF dipakai langsung, tidak butuh random time
+    dt, _ = read_exif_datetime(image_path)
+    if dt:
+        return None
 
     filename_date, filename_time = parse_filename_datetime(image_path)
     if filename_date and not filename_time:
@@ -441,31 +348,25 @@ def get_random_time_request_date(image_path, args, manual_datetime=None, manual_
     return None
 
 
-def build_random_time_plan(images, args, manual_datetime=None, manual_date=None, replace_date=None, forced_random_date=None):
-    requests = []
-
-    for image_path in images:
-        date_value = get_random_time_request_date(
-            image_path,
-            args,
-            manual_datetime=manual_datetime,
-            manual_date=manual_date,
-            replace_date=replace_date,
-            forced_random_date=forced_random_date,
-        )
-        if date_value:
-            requests.append((image_path, date_value))
-
+def build_random_time_plan(images, args, manual_datetime=None, manual_date=None,
+                           replace_date=None, forced_random_date=None):
+    requests = [
+        (path, date)
+        for path in images
+        if (date := _needs_random_time_date(
+            path, args, manual_datetime, manual_date, replace_date, forced_random_date
+        ))
+    ]
     return OrderedRandomTimePlan(requests)
 
 
 def print_exif_info(image_path):
     try:
-        with Image.open(image_path) as image:
-            exif = image._getexif()
-            print(f"\n{image_path} ({image.size[0]}×{image.size[1]}px)")
-    except Exception as error:
-        print(f"Gagal membuka {image_path}: {error}")
+        with Image.open(image_path) as img:
+            exif = img._getexif()
+            print(f"\n{image_path} ({img.size[0]}×{img.size[1]}px)")
+    except Exception as e:
+        print(f"Gagal membuka {image_path}: {e}")
         return
 
     if not exif:
@@ -474,7 +375,7 @@ def print_exif_info(image_path):
 
     for tag_id, value in sorted(exif.items()):
         name = TAGS.get(tag_id, f"Tag#{tag_id}")
-        if any(keyword in name.lower() for keyword in ("date", "time", "make", "model", "software")):
+        if any(k in name.lower() for k in ("date", "time", "make", "model", "software")):
             print(f"{name:30s}: {value}")
 
 
@@ -485,90 +386,78 @@ def print_exif_info(image_path):
 def add_logo(overlay, logo_image, scale):
     if logo_image is None:
         return
-
     width, height = overlay.size
     logo = logo_image.convert("RGBA")
-    logo_height = int(height * LOGO_HEIGHT_RATIO)
-    logo_width = int(logo.width * logo_height / logo.height)
-    logo = logo.resize((logo_width, logo_height), Image.LANCZOS)
-
-    red, green, blue, alpha = logo.split()
-    alpha = alpha.point(lambda value: int(value * LOGO_OPACITY / 255))
-    logo = Image.merge("RGBA", (red, green, blue, alpha))
-
-    x = width - logo_width - scaled(LOGO_MARGIN_X, scale)
-    y = scaled(LOGO_MARGIN_Y, scale)
-    overlay.paste(logo, (x, y), logo)
+    lh   = int(height * LOGO_HEIGHT_RATIO)
+    lw   = int(logo.width * lh / logo.height)
+    logo = logo.resize((lw, lh), Image.LANCZOS)
+    r, g, b, a = logo.split()
+    logo = Image.merge("RGBA", (r, g, b, a.point(lambda v: int(v * LOGO_OPACITY / 255))))
+    overlay.paste(logo, (width - lw - scaled(LOGO_MARGIN_X, scale), scaled(LOGO_MARGIN_Y, scale)), logo)
 
 
 def add_timestamp_text(overlay, timestamp, tag, scale, caption=False):
     width, height = overlay.size
-    draw = ImageDraw.Draw(overlay)
+    draw   = ImageDraw.Draw(overlay)
     margin = scaled(TEXT_MARGIN, scale)
     gap    = scaled(LINE_GAP, scale)
+    ts_font  = load_font(scaled(TIMESTAMP_FONT_SIZE, scale))
+    tag_font = load_font(scaled(TAG_FONT_SIZE, scale))
 
-    timestamp_font = load_font(scaled(TIMESTAMP_FONT_SIZE, scale))
-    tag_font       = load_font(scaled(TAG_FONT_SIZE, scale))
+    def tw(text, font):
+        bb = draw.textbbox((0, 0), text, font=font)
+        return bb[2] - bb[0], bb[3] - bb[1]
 
-    timestamp_text = format_datetime_id(timestamp)
+    ts_text    = format_datetime_id(timestamp)
+    ts_w, ts_h = tw(ts_text, ts_font)
 
-    def text_size(text, font):
-        box = draw.textbbox((0, 0), text, font=font)
-        return box[2] - box[0], box[3] - box[1]
-
-    ts_w, ts_h = text_size(timestamp_text, timestamp_font)
-
-    # Hitung posisi dari bawah ke atas
-    # Urutan (bawah → atas): tag → caption_line_2 → caption_line_1 → timestamp
+    # Posisi dihitung dari bawah ke atas: tag → caption2 → caption1 → timestamp
     if tag:
-        tag_w, tag_h = text_size(tag, tag_font)
-        bottom_y = height - margin - tag_h
+        tag_w, tag_h = tw(tag, tag_font)
+        tag_y    = height - margin - tag_h
+        anchor_y = tag_y  # titik acuan untuk caption / timestamp
     else:
-        tag_w = tag_h = 0
-        bottom_y = height - margin
+        tag_w = tag_h = tag_y = 0
+        anchor_y = height - margin
 
     if caption:
-        c1_w, c1_h = text_size(CAPTION_LINE_1, timestamp_font)
-        c2_w, c2_h = text_size(CAPTION_LINE_2, timestamp_font)
-        cap_gap      = scaled(CAPTION_GAP,      scale)
-        cap_line_gap = scaled(CAPTION_LINE_GAP, scale)
-        cap_bottom   = scaled(CAPTION_BOTTOM,   scale)
-        if tag:
-            c2_y = bottom_y - cap_gap - c2_h
-        else:
-            c2_y = height - cap_bottom - c2_h
-        c1_y = c2_y - cap_line_gap - c1_h
-        ts_y = c1_y - cap_gap - ts_h
+        c1_w, c1_h = tw(CAPTION_LINE_1, ts_font)
+        c2_w, c2_h = tw(CAPTION_LINE_2, ts_font)
+        cg  = scaled(CAPTION_GAP,      scale)
+        clg = scaled(CAPTION_LINE_GAP, scale)
+        cb  = scaled(CAPTION_BOTTOM,   scale)
+        c2_y = (anchor_y - cg - c2_h) if tag else (height - cb - c2_h)
+        c1_y = c2_y - clg - c1_h
+        ts_y = c1_y - cg  - ts_h
     else:
-        if tag:
-            ts_y = bottom_y - gap - ts_h
-        else:
-            ts_y = height - margin - ts_h
+        ts_y = (anchor_y - gap - ts_h) if tag else (height - margin - ts_h)
 
-    draw_text_shadow(draw, (width - margin - ts_w, ts_y), timestamp_text, timestamp_font, scale)
+    draw_text_shadow(draw, (width - margin - ts_w, ts_y), ts_text, ts_font, scale)
 
     if caption:
-        draw_text_shadow(draw, (width - margin - c1_w, c1_y), CAPTION_LINE_1, timestamp_font, scale)
-        draw_text_shadow(draw, (width - margin - c2_w, c2_y), CAPTION_LINE_2, timestamp_font, scale)
+        draw_text_shadow(draw, (width - margin - c1_w, c1_y), CAPTION_LINE_1, ts_font, scale)
+        draw_text_shadow(draw, (width - margin - c2_w, c2_y), CAPTION_LINE_2, ts_font, scale)
 
     if tag:
-        draw_text_shadow(draw, (width - margin - tag_w, bottom_y), tag, tag_font, scale)
+        draw_text_shadow(draw, (width - margin - tag_w, tag_y), tag, tag_font, scale)
 
 
-def add_watermark(image_path, output_path, timestamp, logo_image=None, tag=None, scale=1.0, skip_logo=False, image=None, caption=False):
-    base_image = image if image is not None else Image.open(image_path)
-    base_image = base_image.convert("RGB")
-    width, height = base_image.size
-    final_scale = auto_scale(width, scale)
+def add_watermark(image_path, output_path, timestamp, logo_image=None,
+                  tag=None, scale=1.0, skip_logo=False, image=None, caption=False):
+    base = image if image is not None else Image.open(image_path)
+    icc  = base.info.get("icc_profile")
+    base = base.convert("RGB")
 
-    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
     if not skip_logo:
-        add_logo(overlay, logo_image, final_scale)
-    add_timestamp_text(overlay, timestamp, tag, final_scale, caption=caption)
+        add_logo(overlay, logo_image, auto_scale(base.width, scale))
+    add_timestamp_text(overlay, timestamp, tag, auto_scale(base.width, scale), caption=caption)
 
-    result = Image.alpha_composite(base_image.convert("RGBA"), overlay).convert("RGB")
-    result.save(output_path, quality=DEFAULT_OUTPUT_QUALITY)
-    return output_path
+    result = Image.alpha_composite(base.convert("RGBA"), overlay).convert("RGB")
+    save_kw = {"quality": DEFAULT_OUTPUT_QUALITY}
+    if icc:
+        save_kw["icc_profile"] = icc
+    result.save(output_path, **save_kw)
 
 
 # ==================================================
@@ -577,135 +466,102 @@ def add_watermark(image_path, output_path, timestamp, logo_image=None, tag=None,
 
 def detect_timestamp_crop(image):
     width, height = image.size
-    scan_height = int(height * CROP_SCAN_BOTTOM_RATIO)
+    scan_h = int(height * CROP_SCAN_BOTTOM_RATIO)
 
     if np is not None:
-        data = np.array(image.convert("RGB"))
-        bottom = data[height - scan_height:, :]
-        yellow = (
-            (bottom[:, :, 0] > YELLOW_MIN_RED)
-            & (bottom[:, :, 1] > YELLOW_MIN_GREEN)
-            & (bottom[:, :, 2] < YELLOW_MAX_BLUE)
-        )
+        bottom = np.array(image.convert("RGB"))[height - scan_h:, :]
+        yellow = ((bottom[:, :, 0] > YELLOW_MIN_RED)
+                  & (bottom[:, :, 1] > YELLOW_MIN_GREEN)
+                  & (bottom[:, :, 2] < YELLOW_MAX_BLUE))
         rows = np.where(yellow)[0]
-        if len(rows) == 0:
-            return 0
-        topmost = int(rows.min())
+        topmost = int(rows.min()) if len(rows) else scan_h
     else:
-        topmost = scan_height
-        for y in range(scan_height):
-            row_y = height - scan_height + y
+        topmost = scan_h
+        for y in range(scan_h):
             for x in range(width):
-                red, green, blue = image.getpixel((x, row_y))[:3]
-                if red > YELLOW_MIN_RED and green > YELLOW_MIN_GREEN and blue < YELLOW_MAX_BLUE:
+                r, g, b = image.getpixel((x, height - scan_h + y))[:3]
+                if r > YELLOW_MIN_RED and g > YELLOW_MIN_GREEN and b < YELLOW_MAX_BLUE:
                     topmost = y
                     break
-            if topmost != scan_height:
+            if topmost != scan_h:
                 break
 
-    return max(0, int((scan_height - topmost) * CROP_PADDING_FACTOR))
+    return max(0, int((scan_h - topmost) * CROP_PADDING_FACTOR))
 
 
 def crop_keep_ratio(image, crop_bottom):
     width, height = image.size
     if crop_bottom <= 0 or crop_bottom >= height:
         return image
-
-    crop_left = round(width * crop_bottom / height)
-    return image.crop((crop_left, 0, width, height - crop_bottom))
+    return image.crop((round(width * crop_bottom / height), 0, width, height - crop_bottom))
 
 
 # ==================================================
 # FILE INPUT / OUTPUT
 # ==================================================
 
-def github_blob_url_to_raw(url):
-    if "github.com" in url and "/blob/" in url:
-        return url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/")
-    return url
-
-
 def open_logo_file(path):
     try:
-        with Image.open(path) as image:
-            return image.convert("RGBA").copy()
-    except Exception as error:
-        print(f"Gagal membuka logo: {path} ({error})")
+        with Image.open(path) as img:
+            return img.convert("RGBA").copy()
+    except Exception as e:
+        print(f"Gagal membuka logo: {path} ({e})")
         return None
 
 
 def download_logo_image(url):
-    download_url = github_blob_url_to_raw(url)
-
+    raw_url = url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/")
     try:
-        print(f"Logo lokal tidak ditemukan. Ambil logo online tanpa menyimpan: {url}")
-        with urllib.request.urlopen(download_url, timeout=LOGO_DOWNLOAD_TIMEOUT) as response:
-            data = response.read()
-
-        with Image.open(io.BytesIO(data)) as image:
-            return image.convert("RGBA").copy()
-    except Exception as error:
-        print(f"Gagal ambil logo online: {error}")
+        print(f"Logo lokal tidak ditemukan. Ambil logo online: {url}")
+        with urllib.request.urlopen(raw_url, timeout=LOGO_DOWNLOAD_TIMEOUT) as r:
+            data = r.read()
+        with Image.open(io.BytesIO(data)) as img:
+            return img.convert("RGBA").copy()
+    except Exception as e:
+        print(f"Gagal ambil logo online: {e}")
         return None
 
 
 def resolve_logo(cli_logo):
     if cli_logo:
-        logo_image = open_logo_file(cli_logo)
-        exclude = {cli_logo} if logo_image is not None else set()
-        return logo_image, exclude
+        logo = open_logo_file(cli_logo)
+        return logo, {cli_logo} if logo else set()
 
-    default_logo = Path(__file__).parent / DEFAULT_LOGO_FILENAME
-    if default_logo.exists():
-        return open_logo_file(default_logo), {str(default_logo)}
+    default = Path(__file__).parent / DEFAULT_LOGO_FILENAME
+    if default.exists():
+        return open_logo_file(default), {str(default)}
 
-    # Tidak disimpan ke file. Setiap script dijalankan dan logo lokal tidak ada,
-    # logo akan diambil online lagi.
     return download_logo_image(DEFAULT_LOGO_URL), set()
 
 
 def collect_images(inputs, recursive=False, exclude=None):
-    excluded = {Path(path).resolve() for path in (exclude or [])}
-    result = []
+    excluded = {Path(p).resolve() for p in (exclude or [])}
+    seen, result = set(), []
 
     for item in inputs:
         path = Path(item)
-
         if path.is_file():
             if path.resolve() not in excluded and path.suffix.lower() in IMAGE_EXTENSIONS:
-                result.append(path)
-            continue
-
-        if path.is_dir():
+                if path.resolve() not in seen:
+                    result.append(path)
+                    seen.add(path.resolve())
+        elif path.is_dir():
             pattern = "**/*" if recursive else "*"
-            result.extend(
-                file_path
-                for file_path in sorted(path.glob(pattern))
-                if file_path.is_file()
-                and file_path.suffix.lower() in IMAGE_EXTENSIONS
-                and file_path.resolve() not in excluded
-            )
-            continue
+            for f in sorted(path.glob(pattern)):
+                if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS and f.resolve() not in excluded:
+                    if f.resolve() not in seen:
+                        result.append(f)
+                        seen.add(f.resolve())
+        else:
+            print(f"Tidak ditemukan: {item}")
 
-        print(f"Tidak ditemukan: {item}")
-
-    unique = []
-    seen = set()
-    for path in result:
-        resolved = path.resolve()
-        if resolved not in seen:
-            unique.append(path)
-            seen.add(resolved)
-    return unique
+    return result
 
 
 def make_output_path(image_path, output_dir=None, suffix=DEFAULT_OUTPUT_SUFFIX):
-    image_path = Path(image_path)
-    output_name = f"{image_path.stem}{suffix}.jpg"
-
-    if output_dir:
-        return str(Path(output_dir) / output_name)
-    return str(image_path.parent / output_name)
+    p = Path(image_path)
+    name = f"{p.stem}{suffix}.jpg"
+    return str(Path(output_dir) / name) if output_dir else str(p.parent / name)
 
 
 # ==================================================
@@ -713,117 +569,88 @@ def make_output_path(image_path, output_dir=None, suffix=DEFAULT_OUTPUT_SUFFIX):
 # ==================================================
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Tambah logo dan timestamp ke foto.")
-    parser.add_argument("images", nargs="*", help="File gambar atau folder. Kosong = folder script.")
-    parser.add_argument("--recursive", "-r", action="store_true", help="Scan subfolder.")
-    parser.add_argument(
-        "--datetime",
-        dest="datetime_text",
-        help="Tanggal/jam manual: YYYY-MM-DD HH:MM:SS atau tanggal saja YYYY-MM-DD.",
-    )
-    parser.add_argument(
-        "--random-time",
-        action="store_true",
-        help="Pakai tanggal dari --datetime atau --replace-date, tapi jam dibuat random urut tanpa ambil EXIF/nama file.",
-    )
-    parser.add_argument(
-        "--replace-date",
-        dest="replace_date_text",
-        help="Mode replace: ganti tanggal ke YYYY-MM-DD, jam tetap dari nama file/metadata jika ada.",
-    )
-    parser.add_argument("--logo", help="Path logo. Default: logo.jpg di folder script.")
-    parser.add_argument("--no-logo", action="store_true", help="Tambah watermark tanpa logo.")
-    parser.add_argument("--tag", help="Teks tambahan di bawah timestamp.")
-    parser.add_argument("--caption", action="store_true", help="Tampilkan caption proyek di bawah timestamp.")
-    parser.add_argument("--output-dir", help="Folder output.")
-    parser.add_argument("--suffix", default=DEFAULT_OUTPUT_SUFFIX, help="Suffix output.")
-    parser.add_argument("--scale", type=float, default=DEFAULT_SCALE, help="Skala watermark.")
-    parser.add_argument("--replace", action="store_true", help="Hapus timestamp lama, lalu tulis timestamp baru.")
-    parser.add_argument("--info", action="store_true", help="Tampilkan EXIF tanpa memproses foto.")
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description="Tambah logo dan timestamp ke foto.")
+    p.add_argument("images", nargs="*", help="File gambar atau folder. Kosong = folder script.")
+    p.add_argument("--recursive", "-r", action="store_true", help="Scan subfolder.")
+    p.add_argument("--datetime",  dest="datetime_text", metavar="YYYY-MM-DD [HH:MM:SS]",
+                   help="Tanggal/jam manual.")
+    p.add_argument("--random-time", action="store_true",
+                   help="Jam random urut. Pakai bersama --datetime atau --replace-date.")
+    p.add_argument("--replace-date", dest="replace_date_text", metavar="YYYY-MM-DD",
+                   help="Ganti tanggal di foto yang sudah ada watermark.")
+    p.add_argument("--logo",     help="Path logo. Default: logo.jpg di folder script.")
+    p.add_argument("--no-logo",  action="store_true", help="Tanpa logo.")
+    p.add_argument("--tag",      help="Teks tambahan di bawah timestamp.")
+    p.add_argument("--caption",  action="store_true", help="Tampilkan caption proyek.")
+    p.add_argument("--output-dir", help="Folder output.")
+    p.add_argument("--suffix",   default=DEFAULT_OUTPUT_SUFFIX, help="Suffix nama file output.")
+    p.add_argument("--scale",    type=float, default=DEFAULT_SCALE, help="Skala watermark.")
+    p.add_argument("--replace",  action="store_true", help="Hapus timestamp lama, tulis baru.")
+    p.add_argument("--info",     action="store_true", help="Tampilkan EXIF saja.")
+    return p.parse_args()
 
 
-def parse_manual_timestamp(datetime_text):
-    if not datetime_text:
+def parse_manual_timestamp(text):
+    if not text:
         return None, None
-
-    try:
-        return datetime.datetime.strptime(datetime_text, MANUAL_DATETIME_FORMAT), None
-    except ValueError:
-        pass
-
-    try:
-        return None, datetime.datetime.strptime(datetime_text, MANUAL_DATE_FORMAT).date()
-    except ValueError:
-        print("Format --datetime salah. Gunakan: YYYY-MM-DD HH:MM:SS atau YYYY-MM-DD")
-        sys.exit(1)
+    for fmt, is_dt in [(MANUAL_DATETIME_FORMAT, True), (MANUAL_DATE_FORMAT, False)]:
+        try:
+            parsed = datetime.datetime.strptime(text, fmt)
+            return (parsed, None) if is_dt else (None, parsed.date())
+        except ValueError:
+            pass
+    print("Format --datetime salah. Gunakan: YYYY-MM-DD HH:MM:SS atau YYYY-MM-DD")
+    sys.exit(1)
 
 
-def parse_manual_date(date_text):
-    if not date_text:
+def parse_manual_date(text):
+    if not text:
         return None
-
     try:
-        return datetime.datetime.strptime(date_text, MANUAL_DATE_FORMAT).date()
+        return datetime.datetime.strptime(text, MANUAL_DATE_FORMAT).date()
     except ValueError:
         print("Format --replace-date salah. Gunakan: YYYY-MM-DD")
         sys.exit(1)
 
 
-def process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, forced_random_date, random_time_plan):
+def process_image(image_path, args, logo_image, manual_datetime, manual_date,
+                  replace_date, forced_random_date, plan):
     if forced_random_date:
-        timestamp, source = get_forced_random_timestamp(image_path, forced_random_date, random_time_plan)
+        timestamp, source = get_forced_random_timestamp(image_path, forced_random_date, plan)
     elif args.replace and replace_date:
-        timestamp, source = get_replace_date_timestamp(image_path, replace_date, random_time_plan)
+        timestamp, source = get_replace_date_timestamp(image_path, replace_date, plan)
     else:
-        timestamp, source = get_timestamp(image_path, manual_datetime, manual_date, random_time_plan)
+        timestamp, source = get_timestamp(image_path, manual_datetime, manual_date, plan)
+
     output_path = make_output_path(image_path, args.output_dir, args.suffix)
 
     if args.replace:
-        original = Image.open(image_path)
-        crop_bottom = detect_timestamp_crop(original)
-        if crop_bottom > 0:
-            cropped = crop_keep_ratio(original, crop_bottom)
-        else:
-            cropped = original
+        original   = Image.open(image_path)
+        crop_b     = detect_timestamp_crop(original)
+        cropped    = crop_keep_ratio(original, crop_b) if crop_b > 0 else original
+        if crop_b == 0:
             print(f"Timestamp kuning tidak terdeteksi: {Path(image_path).name}")
-
-        add_watermark(
-            image_path=image_path,
-            output_path=output_path,
-            timestamp=timestamp,
-            tag=args.tag,
-            scale=args.scale,
-            skip_logo=True,
-            image=cropped,
-            caption=args.caption,
-        )
+        add_watermark(image_path, output_path, timestamp,
+                      tag=args.tag, scale=args.scale, skip_logo=True,
+                      image=cropped, caption=args.caption)
     else:
-        add_watermark(
-            image_path=image_path,
-            output_path=output_path,
-            timestamp=timestamp,
-            logo_image=logo_image,
-            tag=args.tag,
-            scale=args.scale,
-            skip_logo=args.no_logo,
-            caption=args.caption,
-        )
+        add_watermark(image_path, output_path, timestamp, logo_image=logo_image,
+                      tag=args.tag, scale=args.scale, skip_logo=args.no_logo,
+                      caption=args.caption)
 
     print(f"OK: {Path(image_path).name} -> {output_path} [{source}]")
-    return output_path
 
 
 def main():
     args = parse_args()
 
     if args.info:
-        for image_path in args.images:
-            print_exif_info(image_path)
+        for p in args.images:
+            print_exif_info(p)
         return
 
     manual_datetime, manual_date = parse_manual_timestamp(args.datetime_text)
-    replace_date = parse_manual_date(args.replace_date_text)
+    replace_date    = parse_manual_date(args.replace_date_text)
     forced_random_date = None
 
     if replace_date:
@@ -831,58 +658,53 @@ def main():
 
     if args.random_time:
         if manual_datetime:
-            forced_random_date = manual_datetime.date()
-            manual_datetime = None
+            forced_random_date, manual_datetime = manual_datetime.date(), None
         elif manual_date:
-            forced_random_date = manual_date
-            manual_date = None
+            forced_random_date, manual_date = manual_date, None
         elif replace_date:
             forced_random_date = replace_date
         else:
-            print("--random-time harus dipakai bersama --datetime YYYY-MM-DD atau --replace-date YYYY-MM-DD")
+            print("--random-time harus dipakai bersama --datetime atau --replace-date")
             sys.exit(1)
 
     if args.replace or args.no_logo:
-        logo_image = None
-        logo_exclude = set()
-        if args.logo:
-            logo_exclude.add(args.logo)
+        logo_image   = None
+        logo_exclude = {args.logo} if args.logo else set()
         default_logo = Path(__file__).parent / DEFAULT_LOGO_FILENAME
         if default_logo.exists():
             logo_exclude.add(str(default_logo))
     else:
         logo_image, logo_exclude = resolve_logo(args.logo)
 
-    inputs = args.images or [str(Path(__file__).parent)]
-
     if args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
 
+    inputs = args.images or [str(Path(__file__).parent)]
     images = collect_images(inputs, recursive=args.recursive, exclude=logo_exclude)
+
     if not images:
         print("Tidak ada gambar yang bisa diproses.")
         sys.exit(1)
 
-    random_time_plan = build_random_time_plan(
-        images,
-        args,
+    plan = build_random_time_plan(
+        images, args,
         manual_datetime=manual_datetime,
         manual_date=manual_date,
         replace_date=replace_date,
         forced_random_date=forced_random_date,
     )
 
-    font_path = find_font() or "PIL default"
-    print(f"Font  : {font_path}")
+    print(f"Font  : {find_font() or 'PIL default'}")
     print(f"Total : {len(images)} file\n")
 
     success = 0
     for image_path in images:
         try:
-            process_image(image_path, args, logo_image, manual_datetime, manual_date, replace_date, forced_random_date, random_time_plan)
+            process_image(image_path, args, logo_image, manual_datetime, manual_date,
+                          replace_date, forced_random_date, plan)
             success += 1
-        except Exception as error:
-            print(f"Gagal: {image_path}: {error}")
+        except Exception as e:
+            print(f"Gagal: {image_path}: {e}")
 
     print(f"\nSelesai: {success}/{len(images)} file berhasil diproses.")
 
